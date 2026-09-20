@@ -9,7 +9,11 @@ if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir -Force | Out-Null
 }
 
-$KuiSources = Get-ChildItem -Path (Join-Path $RepoRoot "platform\kui") -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName
+$KuiSources = @(Get-ChildItem -Path (Join-Path $RepoRoot "platform\kui") -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName)
+$PlatformUi4Dir = Join-Path $RepoRoot "platform\ui4"
+if (Test-Path $PlatformUi4Dir) {
+    $KuiSources += @(Get-ChildItem -Path $PlatformUi4Dir -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName)
+}
 
 $TestSuites = @(
     @{ Name = "Phase 001: RepositoryBootstrapTest"; Source = "tests\RepositoryBootstrapTest.kt"; Class = "tests.RepositoryBootstrapTestKt"; Args = @($RepoRoot) },

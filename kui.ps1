@@ -8,12 +8,16 @@ if (-not (Test-Path $BuildDir)) {
 
 $JarPath = Join-Path $BuildDir "kui.jar"
 $PlatformKuiDir = Join-Path $ScriptDir "platform\kui"
+$PlatformUi4Dir = Join-Path $ScriptDir "platform\ui4"
 
-# Find all Kotlin source files for KUI toolchain
-$SourceFiles = Get-ChildItem -Path $PlatformKuiDir -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName
+# Find all Kotlin source files for KUI toolchain and UI4 runtime
+$SourceFiles = @(Get-ChildItem -Path $PlatformKuiDir -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName)
+if (Test-Path $PlatformUi4Dir) {
+    $SourceFiles += @(Get-ChildItem -Path $PlatformUi4Dir -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName)
+}
 
 if ($SourceFiles.Count -eq 0) {
-    Write-Error "No Kotlin sources found in $PlatformKuiDir"
+    Write-Error "No Kotlin sources found in $PlatformKuiDir or $PlatformUi4Dir"
     exit 1
 }
 

@@ -75,6 +75,10 @@ private fun executeCommand(command: Command, args: List<String>, flags: Map<Stri
                 println("Report saved to .kui/build/reports/benchmark-foundation.json")
             }
         }
+        Command.UI_TREE -> {
+            val exitCode = ui4.tree.UiTreeCommand.execute(args, flags)
+            if (exitCode != 0) System.exit(exitCode)
+        }
         else -> {
             // Placeholder dispatcher for commands being built in subsequent phases
             println("kui: command '${command.commandName}' acknowledged.")

@@ -10,7 +10,11 @@ if (-not (Test-Path $BuildDir)) {
 }
 
 $JarPath = Join-Path $BuildDir "ProjectGeneratorTest.jar"
-$KuiSources = Get-ChildItem -Path (Join-Path $RepoRoot "platform\kui") -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName
+$KuiSources = @(Get-ChildItem -Path (Join-Path $RepoRoot "platform\kui") -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName)
+$PlatformUi4Dir = Join-Path $RepoRoot "platform\ui4"
+if (Test-Path $PlatformUi4Dir) {
+    $KuiSources += @(Get-ChildItem -Path $PlatformUi4Dir -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName)
+}
 $AllSources = $KuiSources + (Join-Path $RepoRoot "tests\ProjectGeneratorTest.kt")
 
 Write-Host "[KUI4] Compiling ProjectGeneratorTest.kt with kotlinc..." -ForegroundColor Cyan

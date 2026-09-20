@@ -88,11 +88,20 @@ fun app(block: UI4AppScope.() -> Unit) {
         val jarFile = File(targetDir, "ui4-api.jar")
         val hashFile = File(targetDir, "ui4-api.sha256")
 
-        // 1. Locate UI4 source file or create temporary from embedded definition
-        val sourceContent = resolveSourceContent()
-        val currentHash = Hasher.hashString(sourceContent)
+        val ui4Dir = resolveUi4Dir()
+        val sourceFiles = if (ui4Dir != null && ui4Dir.isDirectory) {
+            SourceDiscovery.findSources(ui4Dir)
+        } else {
+            emptyList()
+        }
 
-        // 2. Fast cache check
+        val currentHash = if (sourceFiles.isNotEmpty()) {
+            SourceHasher.hashSources(sourceFiles, ui4Dir!!)
+        } else {
+            Hasher.hashString(resolveSourceContent())
+        }
+
+        // Fast cache check
         if (jarFile.exists() && hashFile.exists()) {
             val cachedHash = hashFile.readText().trim()
             if (cachedHash == currentHash) {
@@ -100,13 +109,15 @@ fun app(block: UI4AppScope.() -> Unit) {
             }
         }
 
-        // 3. Compile UI4.kt into ui4-api.jar
-        val tempSrc = File(targetDir, "UI4.kt")
-        tempSrc.writeText(sourceContent)
+        val compileSources = if (sourceFiles.isNotEmpty()) {
+            sourceFiles.map { it.absolutePath }
+        } else {
+            val tempSrc = File(targetDir, "UI4.kt")
+            tempSrc.writeText(resolveSourceContent())
+            listOf(tempSrc.absolutePath)
+        }
 
-        val args = listOf(
-            kotlincPath,
-            tempSrc.absolutePath,
+        val args = listOf(kotlincPath) + compileSources + listOf(
             "-d", jarFile.absolutePath,
             "-jvm-target", "21"
         )
@@ -118,13 +129,24 @@ fun app(block: UI4AppScope.() -> Unit) {
             )
         }
 
-        // 4. Update hash record
+        // Update hash record
         hashFile.writeText(currentHash)
         return jarFile
     }
 
+    private fun resolveUi4Dir(): File? {
+        var curr: File? = File(".").canonicalFile
+        while (curr != null) {
+            val candidate = File(curr, "platform/ui4")
+            if (candidate.exists() && candidate.isDirectory) {
+                return candidate
+            }
+            curr = curr.parentFile
+        }
+        return null
+    }
+
     private fun resolveSourceContent(): String {
-        // Try to read platform/ui4/api/UI4.kt from current working directory or ancestors
         var curr: File? = File(".").canonicalFile
         while (curr != null) {
             val candidate = File(curr, "platform/ui4/api/UI4.kt")
