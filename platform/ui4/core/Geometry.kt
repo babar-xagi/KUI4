@@ -71,6 +71,14 @@ data class Rect(
     fun intersects(other: Rect): Boolean =
         left < other.right && right > other.left && top < other.bottom && bottom > other.top
 
+    fun intersect(other: Rect): Rect {
+        val l = maxOf(left, other.left)
+        val t = maxOf(top, other.top)
+        val r = minOf(right, other.right)
+        val b = minOf(bottom, other.bottom)
+        return if (r > l && b > t) Rect(l, t, r - l, b - t) else Zero
+    }
+
     fun offset(dx: Float, dy: Float): Rect =
         Rect(left + dx, top + dy, width, height)
 

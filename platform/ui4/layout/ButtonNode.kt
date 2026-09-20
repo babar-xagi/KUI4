@@ -15,9 +15,22 @@ import ui4.tree.UiNode
  */
 class ButtonNode(
     var label: String,
-    var onClick: () -> Unit = {},
+    onClick: () -> Unit = {},
     id: NodeId = NodeIdGenerator.next()
 ) : UiNode(id, "Button") {
+
+    constructor(label: String, onClick: () -> Unit) : this(label, onClick, NodeIdGenerator.next())
+
+    init {
+        this.onClick = onClick
+        this.isFocusable = true
+    }
+
+    fun click() {
+        if (enabled) {
+            onClick?.invoke()
+        }
+    }
 
     override fun measure(constraints: Constraints): Size {
         incomingConstraints = constraints

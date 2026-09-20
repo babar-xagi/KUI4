@@ -24,6 +24,7 @@ import ui4.layout.TextStyle
 import ui4.tree.UiNode
 import ui4.tree.UiRoot
 import ui4.tree.addChild
+import ui4.state.*
 
 // Re-export core types to ui4 package for ergonomic imports (Phase 090)
 typealias Color = ui4.core.Color
@@ -37,13 +38,11 @@ typealias Point = ui4.core.Point
 typealias Size = ui4.core.Size
 typealias Rect = ui4.core.Rect
 typealias Constraints = ui4.core.Constraints
+typealias State<T> = ui4.state.State<T>
+typealias MutableState<T> = ui4.state.MutableState<T>
 
-/**
- * Mutable state container (Phase 045).
- */
-class State<T>(var value: T)
-
-fun <T> state(initial: T): State<T> = State(initial)
+fun <T> mutableStateOf(initial: T): MutableState<T> = ui4.state.mutableStateOf(initial)
+fun <T> state(initial: T): MutableState<T> = ui4.state.state(initial)
 
 /**
  * Top-level application scope for building UI trees (Phases 080, 081).
@@ -175,13 +174,28 @@ class UI4ContainerScope(val container: UiNode) {
         return node
     }
 
+    fun text(
+        state: State<*>,
+        modifier: Modifier = Modifier,
+        style: TextStyle = TextStyle.Body
+    ): TextNode {
+        val node = TextNode(text = state.value.toString(), style = style).apply {
+            this.modifier = modifier
+        }
+        node.bindText(state)
+        container.addChild(node)
+        return node
+    }
+
     fun button(
         label: String,
         modifier: Modifier = Modifier,
+        enabled: Boolean = true,
         onClick: () -> Unit = {}
     ): ButtonNode {
         val node = ButtonNode(label = label, onClick = onClick).apply {
             this.modifier = modifier
+            this.enabled = enabled
         }
         container.addChild(node)
         return node

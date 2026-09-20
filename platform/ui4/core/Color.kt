@@ -5,6 +5,13 @@ package ui4.core
  */
 data class Color(val argb: Long) {
 
+    constructor(red: Float, green: Float, blue: Float, alpha: Float = 1.0f) : this(
+        (((alpha.coerceIn(0f, 1f) * 255f).toInt() and 0xFF).toLong() shl 24) or
+        (((red.coerceIn(0f, 1f) * 255f).toInt() and 0xFF).toLong() shl 16) or
+        (((green.coerceIn(0f, 1f) * 255f).toInt() and 0xFF).toLong() shl 8) or
+        (((blue.coerceIn(0f, 1f) * 255f).toInt() and 0xFF).toLong())
+    )
+
     val alpha: Float get() = ((argb ushr 24) and 0xFF).toFloat() / 255f
     val red: Float get() = ((argb ushr 16) and 0xFF).toFloat() / 255f
     val green: Float get() = ((argb ushr 8) and 0xFF).toFloat() / 255f

@@ -28,7 +28,16 @@ open class UiNode(
     var dirty: Boolean = true
         internal set
 
+    val isDirty: Boolean get() = dirty
+    val isClean: Boolean get() = !dirty
+
     var modifier: Modifier = Modifier
+
+    var isPressed: Boolean = false
+    var isFocusable: Boolean = false
+    var isFocused: Boolean = false
+    var enabled: Boolean = true
+    var onClick: (() -> Unit)? = null
 
     var measuredSize: Size = Size.Zero
         protected set

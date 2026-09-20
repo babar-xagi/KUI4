@@ -93,6 +93,36 @@ data class WeightModifier(val weight: Float) : Modifier.Element {
     override fun toString(): String = "Weight($weight)"
 }
 
+/**
+ * Layer opacity modifier (Phase 099).
+ */
+data class AlphaModifier(val alpha: Float) : Modifier.Element {
+    init { require(alpha in 0f..1f) { "alpha must be in 0..1: $alpha" } }
+    override fun toString(): String = "Alpha($alpha)"
+}
+
+/**
+ * Rounded corner radius modifier (Phase 098).
+ */
+data class RoundedModifier(val radius: Float) : Modifier.Element {
+    init { require(radius >= 0f) { "radius must be non-negative: $radius" } }
+    override fun toString(): String = "Rounded($radius)"
+}
+
+/**
+ * Clipping boundary modifier (Phase 097).
+ */
+data class ClipModifier(val clip: Boolean = true) : Modifier.Element {
+    override fun toString(): String = "Clip($clip)"
+}
+
+/**
+ * Enabled state modifier (Phase 111).
+ */
+data class EnabledModifier(val enabled: Boolean) : Modifier.Element {
+    override fun toString(): String = "Enabled($enabled)"
+}
+
 // -------------------------------------------------------------
 // Fluent Modifier Extensions
 // -------------------------------------------------------------
@@ -135,6 +165,18 @@ fun Modifier.fillMaxSize(fraction: Float = 1.0f): Modifier =
 
 fun Modifier.weight(weight: Float): Modifier =
     then(WeightModifier(weight))
+
+fun Modifier.alpha(alpha: Float): Modifier =
+    then(AlphaModifier(alpha))
+
+fun Modifier.rounded(radius: Float): Modifier =
+    then(RoundedModifier(radius))
+
+fun Modifier.clip(clip: Boolean = true): Modifier =
+    then(ClipModifier(clip))
+
+fun Modifier.enabled(enabled: Boolean): Modifier =
+    then(EnabledModifier(enabled))
 
 // -------------------------------------------------------------
 // Modifier Inspection Helpers
@@ -182,3 +224,26 @@ fun Modifier.findFillHeight(): Float? =
     foldIn<Float?>(null) { acc, elem ->
         if (elem is FillHeightModifier) elem.fraction else acc
     }
+
+fun Modifier.findAlpha(): Float? =
+    foldIn<Float?>(null) { acc, elem ->
+        if (elem is AlphaModifier) {
+            if (acc == null) elem.alpha else acc * elem.alpha
+        } else acc
+    }
+
+fun Modifier.findRadius(): Float? =
+    foldIn<Float?>(null) { acc, elem ->
+        if (elem is RoundedModifier) elem.radius else acc
+    }
+
+fun Modifier.findClip(): Boolean? =
+    foldIn<Boolean?>(null) { acc, elem ->
+        if (elem is ClipModifier) elem.clip else acc
+    }
+
+fun Modifier.findEnabled(): Boolean? =
+    foldIn<Boolean?>(null) { acc, elem ->
+        if (elem is EnabledModifier) elem.enabled else acc
+    }
+
