@@ -79,6 +79,18 @@ private fun executeCommand(command: Command, args: List<String>, flags: Map<Stri
             val exitCode = ui4.tree.UiTreeCommand.execute(args, flags)
             if (exitCode != 0) System.exit(exitCode)
         }
+        Command.RUN -> {
+            val exitCode = kui.device.RunCommand.executeRun(args, flags)
+            if (exitCode != 0) System.exit(exitCode)
+        }
+        Command.INSTALL -> {
+            val exitCode = kui.device.RunCommand.executeInstall(args, flags)
+            if (exitCode != 0) System.exit(exitCode)
+        }
+        Command.LAUNCH -> {
+            val exitCode = kui.device.RunCommand.executeLaunch(args, flags)
+            if (exitCode != 0) System.exit(exitCode)
+        }
         else -> {
             // Placeholder dispatcher for commands being built in subsequent phases
             println("kui: command '${command.commandName}' acknowledged.")

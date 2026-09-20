@@ -150,6 +150,21 @@ object BuildCommand {
         taskCacheFile.writeText("key=${cacheKey.key}\ncompiled_at=${System.currentTimeMillis()}\n")
 
         println("[KUI] Compiled ${sources.size} source file(s) in ${compileDurationMs}ms -> ${classesDir.name}/")
+
+        // 10. Package, zipalign, and sign APK (Phases 169-176)
+        println("[KUI] Packaging APK: classes.dex + AndroidManifest.xml...")
+        val packageResult = kui.apk.PackagingTask.execute(
+            projectRoot = root,
+            classesDir = classesDir,
+            config = config
+        )
+
+        if (!packageResult.isSuccess) {
+            System.err.println("[KUI] Packaging failed: ${packageResult.message}")
+            return 1
+        }
+
+        println("[KUI] Signed APK (v2): ${packageResult.outputFile?.relativeTo(root)?.path ?: "app-debug.apk"} (${packageResult.apkSize} bytes)")
         println("[KUI] BUILD SUCCESS (total: ${totalTimer.elapsedMillis()}ms)")
 
         return 0
