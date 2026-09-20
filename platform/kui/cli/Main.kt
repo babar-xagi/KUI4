@@ -1,19 +1,26 @@
 package kui.cli
 
 fun main(args: Array<String>) {
-    // Handle version flag
-    if (args.contains("--version") || args.contains("-v") || (args.isNotEmpty() && args[0] == "version")) {
+    // Running without args shows help (Phase 003)
+    if (args.isEmpty()) {
+        Help.printHelp()
+        return
+    }
+
+    val first = args[0]
+
+    // Version flag
+    if (first == "--version" || first == "-v" || first == "version") {
         println(KuiVersion.DISPLAY_NAME)
         return
     }
 
-    // Default minimal CLI entry (will be expanded in Phase 003)
-    if (args.isEmpty()) {
-        println(KuiVersion.DISPLAY_NAME)
-        println("Usage: kui [command] [options]")
-        println("Try 'kui --version' for version information.")
+    // Help flag or command
+    if (first == "--help" || first == "-h" || first == "help") {
+        Help.printHelp()
         return
     }
 
     println("Unknown command: ${args.joinToString(" ")}")
+    println("Run 'kui --help' for available commands.")
 }

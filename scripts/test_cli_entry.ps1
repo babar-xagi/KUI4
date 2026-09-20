@@ -9,11 +9,11 @@ if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir -Force | Out-Null
 }
 
-$JarPath = Join-Path $BuildDir "KuiVersionTest.jar"
+$JarPath = Join-Path $BuildDir "CliEntryTest.jar"
 $KuiSources = Get-ChildItem -Path (Join-Path $RepoRoot "platform\kui") -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName
-$Sources = $KuiSources + (Join-Path $RepoRoot "tests\KuiVersionTest.kt")
+$Sources = $KuiSources + (Join-Path $RepoRoot "tests\CliEntryTest.kt")
 
-Write-Host "[KUI4] Compiling KuiVersionTest.kt with kotlinc..." -ForegroundColor Cyan
+Write-Host "[KUI4] Compiling CliEntryTest.kt with kotlinc..." -ForegroundColor Cyan
 & kotlinc $Sources -include-runtime -d $JarPath
 
 if ($LASTEXITCODE -ne 0) {
@@ -21,12 +21,12 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host "[KUI4] Executing version test suite with java..." -ForegroundColor Cyan
-& java -cp $JarPath tests.KuiVersionTestKt $RepoRoot
+Write-Host "[KUI4] Executing CLI entry test suite with java..." -ForegroundColor Cyan
+& java -cp $JarPath tests.CliEntryTestKt
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[KUI4] Test failed!" -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
-Write-Host "[KUI4] KUI Version Verification: ALL PASS" -ForegroundColor Green
+Write-Host "[KUI4] KUI CLI Entry Verification: ALL PASS" -ForegroundColor Green
