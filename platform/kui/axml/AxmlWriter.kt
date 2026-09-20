@@ -78,6 +78,7 @@ class AxmlWriter {
 
     private val strings = mutableListOf<String>()
     private val stringIndices = mutableMapOf<String, Int>()
+    private val resourceIds = mutableMapOf<Int, Int>()
 
     fun getStringIndex(s: String): Int =
         stringIndices.getOrPut(s) {
@@ -85,6 +86,10 @@ class AxmlWriter {
             strings.add(s)
             idx
         }
+
+    fun setResourceId(stringIndex: Int, resId: Int) {
+        resourceIds[stringIndex] = resId
+    }
 
     /**
      * Builds binary AXML byte array given root element definition.
@@ -129,13 +134,34 @@ class AxmlWriter {
         stringPoolOut.write(stringDataOut.toByteArray())
         val stringPoolBytes = stringPoolOut.toByteArray()
 
-        // 2. Assemble Final AXML Chunk
-        val totalFileSize = 8 + stringPoolBytes.size + bodyBytes.size
+        // 2. Build Resource Map Chunk (0x0180)
+        val resMapBytes = if (resourceIds.isNotEmpty()) {
+            val maxIdx = resourceIds.keys.maxOrNull() ?: -1
+            val count = maxIdx + 1
+            val resMapOut = AxmlOutputStream()
+            val resMapHeaderSize = 8
+            val resMapTotalSize = resMapHeaderSize + (count * 4)
+            resMapOut.writeShort(AxmlConstants.RES_XML_RESOURCE_MAP_TYPE)
+            resMapOut.writeShort(resMapHeaderSize)
+            resMapOut.writeInt(resMapTotalSize)
+            for (i in 0 until count) {
+                resMapOut.writeInt(resourceIds[i] ?: 0)
+            }
+            resMapOut.toByteArray()
+        } else {
+            ByteArray(0)
+        }
+
+        // 3. Assemble Final AXML Chunk
+        val totalFileSize = 8 + stringPoolBytes.size + resMapBytes.size + bodyBytes.size
         val finalOut = AxmlOutputStream()
         finalOut.writeShort(AxmlConstants.RES_XML_TYPE)
         finalOut.writeShort(8) // header_size
         finalOut.writeInt(totalFileSize)
         finalOut.write(stringPoolBytes)
+        if (resMapBytes.isNotEmpty()) {
+            finalOut.write(resMapBytes)
+        }
         finalOut.write(bodyBytes)
 
         return finalOut.toByteArray()

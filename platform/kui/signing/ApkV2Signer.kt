@@ -35,12 +35,35 @@ data class SigningConfig(
 object DebugKeyGenerator {
 
     private var cachedConfig: SigningConfig? = null
+    private val keyDir = File(System.getProperty("user.home"), ".kui").apply { mkdirs() }
+    private val keyFile = File(keyDir, "debug.pk8")
+    private val certFile = File(keyDir, "debug.crt")
 
     @Synchronized
     fun getOrCreateDebugKey(): SigningConfig {
         cachedConfig?.let { return it }
+
+        if (keyFile.exists() && certFile.exists()) {
+            try {
+                val kf = java.security.KeyFactory.getInstance("RSA")
+                val privKey = kf.generatePrivate(java.security.spec.PKCS8EncodedKeySpec(keyFile.readBytes()))
+                val cf = CertificateFactory.getInstance("X.509")
+                val cert = cf.generateCertificate(ByteArrayInputStream(certFile.readBytes())) as X509Certificate
+                val config = SigningConfig(privKey, cert)
+                cachedConfig = config
+                return config
+            } catch (_: Exception) {
+                // Regenerate if corrupt
+            }
+        }
+
         val keyPair = generateKeyPair()
         val cert = generateSelfSignedCertificate(keyPair)
+        try {
+            keyFile.writeBytes(keyPair.private.encoded)
+            certFile.writeBytes(cert.encoded)
+        } catch (_: Exception) {}
+
         val config = SigningConfig(keyPair.private, cert)
         cachedConfig = config
         return config

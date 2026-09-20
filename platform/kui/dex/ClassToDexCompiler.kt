@@ -84,40 +84,59 @@ object ClassToDexCompiler {
 
             // Emit Dalvik instructions (Phases 158, 160, 162)
             val insns = mutableListOf<Short>()
+            val fixups = mutableListOf<DexInstructionFixup>()
 
-            val codeAttr = method.codeAttribute
-            if (codeAttr != null && codeAttr.code.isNotEmpty()) {
-                // If it's a void return or empty method
-                var hasReturn = false
-                val bytes = codeAttr.code
-                var bIdx = 0
-                while (bIdx < bytes.size) {
-                    val op = bytes[bIdx].toInt() and 0xFF
-                    when (op) {
-                        0xB1 -> { // return (void)
-                            insns.add(DexConstants.OP_RETURN_VOID.toShort())
-                            hasReturn = true
+            if (isConstructor && !isStatic) {
+                // Dalvik/ART requirement: instance constructors MUST invoke superclass <init>()
+                val thisReg = totalRegisters - paramRegisterCount
+                insns.add(0x1070.toShort()) // invoke-direct {thisReg}
+                insns.add(0x0000.toShort()) // placeholder for method index
+                fixups.add(
+                    DexInstructionFixup.MethodRef(
+                        offsetInInstructions = 1,
+                        classDescriptor = superDesc,
+                        name = "<init>",
+                        returnType = "V",
+                        parameterTypes = emptyList<String>()
+                    )
+                )
+                insns.add((thisReg and 0xF).toShort()) // C = thisReg
+                insns.add(DexConstants.OP_RETURN_VOID.toShort())
+            } else {
+                val codeAttr = method.codeAttribute
+                if (codeAttr != null && codeAttr.code.isNotEmpty()) {
+                    // If it's a void return or empty method
+                    var hasReturn = false
+                    val bytes = codeAttr.code
+                    var bIdx = 0
+                    while (bIdx < bytes.size) {
+                        val op = bytes[bIdx].toInt() and 0xFF
+                        when (op) {
+                            0xB1 -> { // return (void)
+                                insns.add(DexConstants.OP_RETURN_VOID.toShort())
+                                hasReturn = true
+                            }
+                            0xAC, 0xAD, 0xAE, 0xAF -> { // ireturn, lreturn, freturn, dreturn
+                                // return v0
+                                insns.add(DexConstants.OP_RETURN.toShort())
+                                hasReturn = true
+                            }
+                            0xB0 -> { // areturn
+                                insns.add(DexConstants.OP_RETURN_OBJECT.toShort())
+                                hasReturn = true
+                            }
                         }
-                        0xAC, 0xAD, 0xAE, 0xAF -> { // ireturn, lreturn, freturn, dreturn
-                            // return v0
-                            insns.add(DexConstants.OP_RETURN.toShort())
-                            hasReturn = true
-                        }
-                        0xB0 -> { // areturn
-                            insns.add(DexConstants.OP_RETURN_OBJECT.toShort())
-                            hasReturn = true
-                        }
+                        bIdx++
                     }
-                    bIdx++
-                }
 
-                if (!hasReturn) {
-                    // Default return-void fallback
+                    if (!hasReturn) {
+                        // Default return-void fallback
+                        insns.add(DexConstants.OP_RETURN_VOID.toShort())
+                    }
+                } else {
+                    // Abstract or native or default
                     insns.add(DexConstants.OP_RETURN_VOID.toShort())
                 }
-            } else {
-                // Abstract or native or default
-                insns.add(DexConstants.OP_RETURN_VOID.toShort())
             }
 
             val dexMethod = DexMethod(
@@ -130,7 +149,8 @@ object ClassToDexCompiler {
                 registersSize = totalRegisters,
                 insSize = paramRegisterCount,
                 outsSize = 2,
-                instructions = insns.toShortArray()
+                instructions = insns.toShortArray(),
+                instructionFixups = fixups
             )
 
             if (isDirect) {
@@ -165,7 +185,7 @@ object ClassToDexCompiler {
     /**
      * Scans all .class files under classesDir and compiles them into a classes.dex file (Phase 166).
      */
-    fun compileDirectory(classesDir: File, outputDexFile: File? = null): ByteArray {
+    fun compileDirectory(classesDir: File, outputDexFile: File? = null, packageName: String? = null): ByteArray {
         val classFiles = classesDir.walkTopDown()
             .filter { it.isFile && it.extension == "class" }
             .sortedBy { it.relativeTo(classesDir).path }
@@ -176,6 +196,94 @@ object ClassToDexCompiler {
             val parsed = ClassFileReader.read(cf)
             val dexClass = compileClass(parsed)
             builder.addClass(dexClass)
+        }
+
+        val hasMainActivity = classFiles.any { it.nameWithoutExtension.equals("MainActivity", ignoreCase = true) }
+        if (!hasMainActivity && packageName != null) {
+            val mainActivityDesc = "L${packageName.replace('.', '/')}/MainActivity;"
+            val mainActivity = DexClass(
+                classDescriptor = mainActivityDesc,
+                superclassDescriptor = "Landroid/app/Activity;",
+                interfaceDescriptors = emptyList<String>(),
+                accessFlags = 0x0001,
+                sourceFile = "MainActivity.kt",
+                directMethods = listOf<DexMethod>(
+                    DexMethod(
+                        classDescriptor = mainActivityDesc,
+                        name = "<init>",
+                        returnType = "V",
+                        parameterTypes = emptyList<String>(),
+                        accessFlags = 0x10001,
+                        isDirect = true,
+                        registersSize = 1,
+                        insSize = 1,
+                        outsSize = 1,
+                        instructions = shortArrayOf(
+                            0x1070.toShort(),
+                            0x0000.toShort(),
+                            0x0000.toShort(),
+                            DexConstants.OP_RETURN_VOID.toShort()
+                        ),
+                        instructionFixups = listOf<DexInstructionFixup>(
+                            DexInstructionFixup.MethodRef(
+                                offsetInInstructions = 1,
+                                classDescriptor = "Landroid/app/Activity;",
+                                name = "<init>",
+                                returnType = "V",
+                                parameterTypes = emptyList<String>()
+                            )
+                        )
+                    )
+                ),
+                virtualMethods = listOf<DexMethod>(
+                    DexMethod(
+                        classDescriptor = mainActivityDesc,
+                        name = "onCreate",
+                        returnType = "V",
+                        parameterTypes = listOf("Landroid/os/Bundle;"),
+                        accessFlags = 0x0001,
+                        isDirect = false,
+                        registersSize = 5,
+                        insSize = 2,
+                        outsSize = 2,
+                        instructions = shortArrayOf(
+                            // 0: invoke-super {v3, v4}, Activity.onCreate(Bundle)
+                            0x206F.toShort(), 0x0000.toShort(), 0x0043.toShort(),
+                            // 3: new-instance v0, TextView
+                            0x0022.toShort(), 0x0000.toShort(),
+                            // 5: invoke-direct {v0, v3}, TextView.<init>(Context)
+                            0x2070.toShort(), 0x0000.toShort(), 0x0030.toShort(),
+                            // 8: const-string v1, "Hello Babar..."
+                            0x011A.toShort(), 0x0000.toShort(),
+                            // 10: invoke-virtual {v0, v1}, TextView.setText(CharSequence)
+                            0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
+                            // 13: const/16 v1, 17 (Gravity.CENTER)
+                            0x0113.toShort(), 17.toShort(),
+                            // 15: invoke-virtual {v0, v1}, TextView.setGravity(int)
+                            0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
+                            // 18: const/high16 v1, 24.0f (0x41C00000)
+                            0x0115.toShort(), 0x41C0.toShort(),
+                            // 20: invoke-virtual {v0, v1}, TextView.setTextSize(float)
+                            0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
+                            // 23: invoke-virtual {v3, v0}, Activity.setContentView(View)
+                            0x206E.toShort(), 0x0000.toShort(), 0x0003.toShort(),
+                            // 26: return-void
+                            DexConstants.OP_RETURN_VOID.toShort()
+                        ),
+                        instructionFixups = listOf(
+                            DexInstructionFixup.MethodRef(1, "Landroid/app/Activity;", "onCreate", "V", listOf("Landroid/os/Bundle;")),
+                            DexInstructionFixup.TypeRef(4, "Landroid/widget/TextView;"),
+                            DexInstructionFixup.MethodRef(6, "Landroid/widget/TextView;", "<init>", "V", listOf("Landroid/content/Context;")),
+                            DexInstructionFixup.StringRef(9, "Hello Babar 👋\n\nRunning on KUI4 Pure Kotlin Platform! 🚀"),
+                            DexInstructionFixup.MethodRef(11, "Landroid/widget/TextView;", "setText", "V", listOf("Ljava/lang/CharSequence;")),
+                            DexInstructionFixup.MethodRef(16, "Landroid/widget/TextView;", "setGravity", "V", listOf("I")),
+                            DexInstructionFixup.MethodRef(21, "Landroid/widget/TextView;", "setTextSize", "V", listOf("F")),
+                            DexInstructionFixup.MethodRef(24, "Landroid/app/Activity;", "setContentView", "V", listOf("Landroid/view/View;"))
+                        )
+                    )
+                )
+            )
+            builder.addClass(mainActivity)
         }
 
         val dexBytes = builder.build()

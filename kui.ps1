@@ -36,7 +36,9 @@ if (-not (Test-Path $JarPath)) {
 }
 
 if ($NeedCompile) {
-    & kotlinc $SourceFiles -include-runtime -d $JarPath
+    $SourcesFile = Join-Path $BuildDir "sources_kui.txt"
+    $SourceFiles | Out-File -Encoding ascii $SourcesFile
+    & kotlinc "@$SourcesFile" -include-runtime -d $JarPath
     if ($LASTEXITCODE -ne 0) {
         Write-Error "KUI compilation failed!"
         exit $LASTEXITCODE

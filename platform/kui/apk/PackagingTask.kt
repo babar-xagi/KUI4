@@ -39,16 +39,17 @@ object PackagingTask {
         outputApk: File = File(projectRoot, "build/outputs/apk/debug/app-debug.apk")
     ): PackagingResult {
         try {
+            val pkgName = config.project.applicationId ?: "com.example.${config.project.name.lowercase().replace('-', '_')}"
+
             // 1. Compile JVM .class files to classes.dex
             val dexBytes = if (classesDir.exists() && (classesDir.listFiles()?.isNotEmpty() == true)) {
-                ClassToDexCompiler.compileDirectory(classesDir)
+                ClassToDexCompiler.compileDirectory(classesDir, packageName = pkgName)
             } else {
                 // Generate minimal fallback dex
-                ClassToDexCompiler.compileClasses(emptyList<DexClass>())
+                ClassToDexCompiler.compileDirectory(classesDir, packageName = pkgName)
             }
 
             // 2. Generate binary AndroidManifest.xml
-            val pkgName = config.project.applicationId ?: "com.example.${config.project.name.lowercase().replace('-', '_')}"
             val manifestBytes = ManifestGenerator.generateBinaryManifest(
                 packageName = pkgName,
                 versionCode = 1,

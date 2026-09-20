@@ -62,6 +62,8 @@ class DeviceManager(
         }
         args.add("install")
         args.add("-r")
+        args.add("-d")
+        args.add("-t")
         args.add(apkFile.absolutePath)
 
         val result = executeAdb(*args.toTypedArray())

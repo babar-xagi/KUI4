@@ -48,6 +48,15 @@ object ManifestGenerator {
             val nameIdx = w.getStringIndex("name")
             val exportedIdx = w.getStringIndex("exported")
 
+            // Register standard Android resource IDs in Resource Map Chunk (0x0180)
+            w.setResourceId(versionCodeIdx, AxmlConstants.ATTR_VERSION_CODE)
+            w.setResourceId(versionNameIdx, AxmlConstants.ATTR_VERSION_NAME)
+            w.setResourceId(minSdkIdx, AxmlConstants.ATTR_MIN_SDK_VERSION)
+            w.setResourceId(targetSdkIdx, AxmlConstants.ATTR_TARGET_SDK_VERSION)
+            w.setResourceId(labelIdx, AxmlConstants.ATTR_LABEL)
+            w.setResourceId(nameIdx, AxmlConstants.ATTR_NAME)
+            w.setResourceId(exportedIdx, AxmlConstants.ATTR_EXPORTED)
+
             // Values
             val pkgValIdx = w.getStringIndex(packageName)
             val verNameValIdx = w.getStringIndex(versionName)
@@ -55,6 +64,10 @@ object ManifestGenerator {
             val actNameValIdx = w.getStringIndex(".MainActivity")
             val mainActionValIdx = w.getStringIndex("android.intent.action.MAIN")
             val launcherCatValIdx = w.getStringIndex("android.intent.category.LAUNCHER")
+            val vcValIdx = w.getStringIndex(versionCode.toString())
+            val minSdkValIdx = w.getStringIndex(minSdk.toString())
+            val targetSdkValIdx = w.getStringIndex(targetSdk.toString())
+            val exportedValIdx = w.getStringIndex("true")
 
             fun writeStartNamespace() {
                 out.writeShort(AxmlConstants.RES_XML_START_NAMESPACE_TYPE)
@@ -84,7 +97,7 @@ object ManifestGenerator {
                 val headerSize = 16
                 val attrStart = 20
                 val attrSize = 20
-                val totalSize = headerSize + 16 + (attrs.size * attrSize)
+                val totalSize = headerSize + 20 + (attrs.size * attrSize)
 
                 out.writeShort(AxmlConstants.RES_XML_START_ELEMENT_TYPE)
                 out.writeShort(headerSize)
@@ -104,11 +117,9 @@ object ManifestGenerator {
                     out.writeInt(attr.uriIndex)
                     out.writeInt(attr.nameIndex)
                     out.writeInt(attr.valueStringIndex)
-                    out.writeShort(8) // typedValue.size
-                    out.writeShort(0) // res0
+                    out.writeShort(8) // typedValue.size = 8
+                    out.writeByte(0)  // res0 = 0
                     out.writeByte(attr.type)
-                    out.writeByte(0) // data type padding
-                    out.writeShort(0)
                     out.writeInt(attr.data)
                 }
             }
@@ -132,7 +143,7 @@ object ManifestGenerator {
                 nameIdx = manifestIdx,
                 attrs = listOf(
                     AxmlAttribute(emptyNsIdx, packageIdx, pkgValIdx, AxmlConstants.TYPE_STRING, pkgValIdx),
-                    AxmlAttribute(nsUriIdx, versionCodeIdx, -1, AxmlConstants.TYPE_INT_DEC, versionCode),
+                    AxmlAttribute(nsUriIdx, versionCodeIdx, vcValIdx, AxmlConstants.TYPE_INT_DEC, versionCode),
                     AxmlAttribute(nsUriIdx, versionNameIdx, verNameValIdx, AxmlConstants.TYPE_STRING, verNameValIdx)
                 )
             )
@@ -142,8 +153,8 @@ object ManifestGenerator {
                 nsIdx = emptyNsIdx,
                 nameIdx = usesSdkIdx,
                 attrs = listOf(
-                    AxmlAttribute(nsUriIdx, minSdkIdx, -1, AxmlConstants.TYPE_INT_DEC, minSdk),
-                    AxmlAttribute(nsUriIdx, targetSdkIdx, -1, AxmlConstants.TYPE_INT_DEC, targetSdk)
+                    AxmlAttribute(nsUriIdx, minSdkIdx, minSdkValIdx, AxmlConstants.TYPE_INT_DEC, minSdk),
+                    AxmlAttribute(nsUriIdx, targetSdkIdx, targetSdkValIdx, AxmlConstants.TYPE_INT_DEC, targetSdk)
                 )
             )
             writeEndElement(emptyNsIdx, usesSdkIdx)
@@ -163,7 +174,7 @@ object ManifestGenerator {
                 nameIdx = activityIdx,
                 attrs = listOf(
                     AxmlAttribute(nsUriIdx, nameIdx, actNameValIdx, AxmlConstants.TYPE_STRING, actNameValIdx),
-                    AxmlAttribute(nsUriIdx, exportedIdx, -1, AxmlConstants.TYPE_INT_BOOLEAN, 1)
+                    AxmlAttribute(nsUriIdx, exportedIdx, exportedValIdx, AxmlConstants.TYPE_INT_BOOLEAN, -1)
                 )
             )
 

@@ -54,6 +54,30 @@ fun ByteArrayOutputStream.writeUleb128(value: Int) {
 }
 
 /**
+ * Encodes a string into Modified UTF-8 (MUTF-8) bytes per Dalvik DEX specification (Phase 157).
+ * Specifically encodes characters > 0xFFFF as UTF-16 surrogate pairs with two 3-byte sequences (0xED),
+ * and U+0000 as 0xC0 0x80. Dalvik / ART strictly forbids 4-byte 0xF0 start bytes in DEX strings.
+ */
+fun encodeMutf8(s: String): ByteArray {
+    val bos = ByteArrayOutputStream()
+    for (i in 0 until s.length) {
+        val c = s[i].code
+        if (c in 0x0001..0x007F) {
+            bos.write(c)
+        } else if (c == 0 || c in 0x0080..0x07FF) {
+            bos.write(0xC0 or ((c ushr 6) and 0x1F))
+            bos.write(0x80 or (c and 0x3F))
+        } else {
+            // 0x0800..0xFFFF (including UTF-16 surrogate code units 0xD800..0xDFFF)
+            bos.write(0xE0 or ((c ushr 12) and 0x0F))
+            bos.write(0x80 or ((c ushr 6) and 0x3F))
+            bos.write(0x80 or (c and 0x3F))
+        }
+    }
+    return bos.toByteArray()
+}
+
+/**
  * Binary Output Stream helper for writing little-endian primitives.
  */
 class DexOutputStream : ByteArrayOutputStream() {
@@ -86,6 +110,43 @@ class DexOutputStream : ByteArrayOutputStream() {
 }
 
 /**
+ * Symbolic reference fixups for Dalvik instructions (Phases 158–163).
+ * Enables instructions to reference method IDs, type IDs, and string IDs
+ * that are resolved and patched at DEX file layout time.
+ */
+sealed class DexInstructionFixup {
+    data class MethodRef(
+        val offsetInInstructions: Int,
+        val classDescriptor: String,
+        val name: String,
+        val returnType: String,
+        val parameterTypes: List<String> = emptyList()
+    ) : DexInstructionFixup()
+
+    data class TypeRef(
+        val offsetInInstructions: Int,
+        val typeDescriptor: String
+    ) : DexInstructionFixup()
+
+    data class StringRef(
+        val offsetInInstructions: Int,
+        val string: String
+    ) : DexInstructionFixup()
+}
+
+/**
+ * Computes the Dalvik shorty descriptor for a method signature.
+ */
+fun computeShorty(returnType: String, parameterTypes: List<String>): String {
+    val shorty = StringBuilder()
+    shorty.append(if (returnType.startsWith("L") || returnType.startsWith("[")) 'L' else returnType.first())
+    for (p in parameterTypes) {
+        shorty.append(if (p.startsWith("L") || p.startsWith("[")) 'L' else p.first())
+    }
+    return shorty.toString()
+}
+
+/**
  * In-memory DEX method definition with Dalvik instructions (Phase 158).
  */
 data class DexMethod(
@@ -98,7 +159,8 @@ data class DexMethod(
     val registersSize: Int,
     val insSize: Int,
     val outsSize: Int,
-    val instructions: ShortArray
+    val instructions: ShortArray,
+    val instructionFixups: List<DexInstructionFixup> = emptyList()
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -108,11 +170,12 @@ data class DexMethod(
                 parameterTypes == other.parameterTypes && accessFlags == other.accessFlags &&
                 isDirect == other.isDirect && registersSize == other.registersSize &&
                 insSize == other.insSize && outsSize == other.outsSize &&
-                instructions.contentEquals(other.instructions)
+                instructions.contentEquals(other.instructions) &&
+                instructionFixups == other.instructionFixups
     }
 
     override fun hashCode(): Int =
-        31 * (classDescriptor.hashCode() + name.hashCode()) + instructions.contentHashCode()
+        31 * (31 * (classDescriptor.hashCode() + name.hashCode()) + instructions.contentHashCode()) + instructionFixups.hashCode()
 }
 
 /**
@@ -159,13 +222,25 @@ class DexFileBuilder {
                 strings.add(m.name)
                 strings.add(m.returnType)
                 for (p in m.parameterTypes) strings.add(p)
-                // Shorty signature (e.g. "V" or "VL")
-                val shorty = StringBuilder()
-                shorty.append(if (m.returnType.startsWith("L") || m.returnType.startsWith("[")) 'L' else m.returnType.first())
-                for (p in m.parameterTypes) {
-                    shorty.append(if (p.startsWith("L") || p.startsWith("[")) 'L' else p.first())
+                strings.add(computeShorty(m.returnType, m.parameterTypes))
+
+                for (fixup in m.instructionFixups) {
+                    when (fixup) {
+                        is DexInstructionFixup.MethodRef -> {
+                            strings.add(fixup.classDescriptor)
+                            strings.add(fixup.name)
+                            strings.add(fixup.returnType)
+                            for (p in fixup.parameterTypes) strings.add(p)
+                            strings.add(computeShorty(fixup.returnType, fixup.parameterTypes))
+                        }
+                        is DexInstructionFixup.TypeRef -> {
+                            strings.add(fixup.typeDescriptor)
+                        }
+                        is DexInstructionFixup.StringRef -> {
+                            strings.add(fixup.string)
+                        }
+                    }
                 }
-                strings.add(shorty.toString())
             }
         }
 
@@ -183,6 +258,19 @@ class DexFileBuilder {
             for (m in c.directMethods + c.virtualMethods) {
                 types.add(m.returnType)
                 for (p in m.parameterTypes) types.add(p)
+                for (fixup in m.instructionFixups) {
+                    when (fixup) {
+                        is DexInstructionFixup.MethodRef -> {
+                            types.add(fixup.classDescriptor)
+                            types.add(fixup.returnType)
+                            for (p in fixup.parameterTypes) types.add(p)
+                        }
+                        is DexInstructionFixup.TypeRef -> {
+                            types.add(fixup.typeDescriptor)
+                        }
+                        else -> {}
+                    }
+                }
             }
         }
         val typeList = types.toList()
@@ -200,12 +288,12 @@ class DexFileBuilder {
         val protos = sortedSetOf<ProtoKey>()
         for (c in classes) {
             for (m in c.directMethods + c.virtualMethods) {
-                val shorty = StringBuilder()
-                shorty.append(if (m.returnType.startsWith("L") || m.returnType.startsWith("[")) 'L' else m.returnType.first())
-                for (p in m.parameterTypes) {
-                    shorty.append(if (p.startsWith("L") || p.startsWith("[")) 'L' else p.first())
+                protos.add(ProtoKey(computeShorty(m.returnType, m.parameterTypes), m.returnType, m.parameterTypes))
+                for (fixup in m.instructionFixups) {
+                    if (fixup is DexInstructionFixup.MethodRef) {
+                        protos.add(ProtoKey(computeShorty(fixup.returnType, fixup.parameterTypes), fixup.returnType, fixup.parameterTypes))
+                    }
                 }
-                protos.add(ProtoKey(shorty.toString(), m.returnType, m.parameterTypes))
             }
         }
         val protoList = protos.toList()
@@ -225,13 +313,14 @@ class DexFileBuilder {
         val methodIds = sortedSetOf<MethodIdKey>()
         for (c in classes) {
             for (m in c.directMethods + c.virtualMethods) {
-                val shorty = StringBuilder()
-                shorty.append(if (m.returnType.startsWith("L") || m.returnType.startsWith("[")) 'L' else m.returnType.first())
-                for (p in m.parameterTypes) {
-                    shorty.append(if (p.startsWith("L") || p.startsWith("[")) 'L' else p.first())
-                }
-                val proto = ProtoKey(shorty.toString(), m.returnType, m.parameterTypes)
+                val proto = ProtoKey(computeShorty(m.returnType, m.parameterTypes), m.returnType, m.parameterTypes)
                 methodIds.add(MethodIdKey(m.classDescriptor, m.name, proto))
+                for (fixup in m.instructionFixups) {
+                    if (fixup is DexInstructionFixup.MethodRef) {
+                        val fProto = ProtoKey(computeShorty(fixup.returnType, fixup.parameterTypes), fixup.returnType, fixup.parameterTypes)
+                        methodIds.add(MethodIdKey(fixup.classDescriptor, fixup.name, fProto))
+                    }
+                }
             }
         }
         val methodIdList = methodIds.toList()
@@ -267,9 +356,9 @@ class DexFileBuilder {
             dataOut.align(1)
             stringDataOffsets[i] = dataStart + dataOut.size()
             val s = stringList[i]
-            val utf8Bytes = s.toByteArray(Charsets.UTF_8)
+            val mutf8Bytes = encodeMutf8(s)
             dataOut.writeUleb128(s.length)
-            dataOut.write(utf8Bytes)
+            dataOut.write(mutf8Bytes)
             dataOut.write(0) // Null-terminator
         }
 
@@ -304,7 +393,29 @@ class DexFileBuilder {
                 dataOut.writeUShort(0) // tries_size
                 dataOut.writeUInt(0)   // debug_info_off
                 dataOut.writeUInt(m.instructions.size)
-                for (insn in m.instructions) {
+
+                // Apply instruction fixups (symbolic method, type, string resolution)
+                val patchedInsns = m.instructions.copyOf()
+                for (fixup in m.instructionFixups) {
+                    when (fixup) {
+                        is DexInstructionFixup.MethodRef -> {
+                            val fProto = ProtoKey(computeShorty(fixup.returnType, fixup.parameterTypes), fixup.returnType, fixup.parameterTypes)
+                            val key = MethodIdKey(fixup.classDescriptor, fixup.name, fProto)
+                            val idx = methodIdMap[key] ?: error("Method ID not found: $key")
+                            patchedInsns[fixup.offsetInInstructions] = idx.toShort()
+                        }
+                        is DexInstructionFixup.TypeRef -> {
+                            val idx = typeMap[fixup.typeDescriptor] ?: error("Type ID not found: ${fixup.typeDescriptor}")
+                            patchedInsns[fixup.offsetInInstructions] = idx.toShort()
+                        }
+                        is DexInstructionFixup.StringRef -> {
+                            val idx = stringMap[fixup.string] ?: error("String ID not found: ${fixup.string}")
+                            patchedInsns[fixup.offsetInInstructions] = idx.toShort()
+                        }
+                    }
+                }
+
+                for (insn in patchedInsns) {
                     dataOut.writeUShort(insn.toInt() and 0xFFFF)
                 }
             }
@@ -322,12 +433,14 @@ class DexFileBuilder {
             dataOut.writeUleb128(c.directMethods.size)
             dataOut.writeUleb128(c.virtualMethods.size)
 
+            val sortedDirect = c.directMethods.sortedBy { m ->
+                val proto = ProtoKey(computeShorty(m.returnType, m.parameterTypes), m.returnType, m.parameterTypes)
+                methodIdMap[MethodIdKey(m.classDescriptor, m.name, proto)] ?: 0
+            }
+
             var lastMethodIdx = 0
-            for (m in c.directMethods) {
-                val shorty = StringBuilder()
-                shorty.append(if (m.returnType.startsWith("L") || m.returnType.startsWith("[")) 'L' else m.returnType.first())
-                for (p in m.parameterTypes) shorty.append(if (p.startsWith("L") || p.startsWith("[")) 'L' else p.first())
-                val proto = ProtoKey(shorty.toString(), m.returnType, m.parameterTypes)
+            for (m in sortedDirect) {
+                val proto = ProtoKey(computeShorty(m.returnType, m.parameterTypes), m.returnType, m.parameterTypes)
                 val mIdx = methodIdMap[MethodIdKey(m.classDescriptor, m.name, proto)] ?: 0
                 val diff = mIdx - lastMethodIdx
                 lastMethodIdx = mIdx
@@ -335,14 +448,16 @@ class DexFileBuilder {
                 dataOut.writeUleb128(diff)
                 dataOut.writeUleb128(m.accessFlags)
                 dataOut.writeUleb128(methodCodeOffsets[m] ?: 0)
+            }
+
+            val sortedVirtual = c.virtualMethods.sortedBy { m ->
+                val proto = ProtoKey(computeShorty(m.returnType, m.parameterTypes), m.returnType, m.parameterTypes)
+                methodIdMap[MethodIdKey(m.classDescriptor, m.name, proto)] ?: 0
             }
 
             lastMethodIdx = 0
-            for (m in c.virtualMethods) {
-                val shorty = StringBuilder()
-                shorty.append(if (m.returnType.startsWith("L") || m.returnType.startsWith("[")) 'L' else m.returnType.first())
-                for (p in m.parameterTypes) shorty.append(if (p.startsWith("L") || p.startsWith("[")) 'L' else p.first())
-                val proto = ProtoKey(shorty.toString(), m.returnType, m.parameterTypes)
+            for (m in sortedVirtual) {
+                val proto = ProtoKey(computeShorty(m.returnType, m.parameterTypes), m.returnType, m.parameterTypes)
                 val mIdx = methodIdMap[MethodIdKey(m.classDescriptor, m.name, proto)] ?: 0
                 val diff = mIdx - lastMethodIdx
                 lastMethodIdx = mIdx
@@ -351,6 +466,46 @@ class DexFileBuilder {
                 dataOut.writeUleb128(m.accessFlags)
                 dataOut.writeUleb128(methodCodeOffsets[m] ?: 0)
             }
+        }
+
+        // 6b. Build and Append map_list (0x1000)
+        dataOut.align(4)
+        val mapOff = dataStart + dataOut.size()
+
+        data class MapItem(val type: Int, val size: Int, val offset: Int)
+        val mapItems = mutableListOf<MapItem>()
+
+        mapItems.add(MapItem(0x0000, 1, 0)) // TYPE_HEADER_ITEM
+        if (stringIdsSize > 0) mapItems.add(MapItem(0x0001, stringIdsSize, stringIdsOff)) // TYPE_STRING_ID_ITEM
+        if (typeIdsSize > 0) mapItems.add(MapItem(0x0002, typeIdsSize, typeIdsOff)) // TYPE_TYPE_ID_ITEM
+        if (protoIdsSize > 0) mapItems.add(MapItem(0x0003, protoIdsSize, protoIdsOff)) // TYPE_PROTO_ID_ITEM
+        if (methodIdsSize > 0) mapItems.add(MapItem(0x0005, methodIdsSize, methodIdsOff)) // TYPE_METHOD_ID_ITEM
+        if (classDefsSize > 0) mapItems.add(MapItem(0x0006, classDefsSize, classDefsOff)) // TYPE_CLASS_DEF_ITEM
+
+        // Data section items
+        if (stringList.isNotEmpty()) {
+            mapItems.add(MapItem(0x2002, stringList.size, stringDataOffsets[0])) // TYPE_STRING_DATA_ITEM
+        }
+        val nonZeroProtoParams = protoParamsOffsets.filter { it != 0 }
+        if (nonZeroProtoParams.isNotEmpty()) {
+            mapItems.add(MapItem(0x1001, nonZeroProtoParams.size, nonZeroProtoParams.minOrNull() ?: 0)) // TYPE_TYPE_LIST
+        }
+        if (methodCodeOffsets.isNotEmpty()) {
+            mapItems.add(MapItem(0x2001, methodCodeOffsets.size, methodCodeOffsets.values.minOrNull() ?: 0)) // TYPE_CODE_ITEM
+        }
+        if (classDataOffsets.isNotEmpty()) {
+            mapItems.add(MapItem(0x2000, classDataOffsets.size, classDataOffsets[0])) // TYPE_CLASS_DATA_ITEM
+        }
+        mapItems.add(MapItem(0x1000, 1, mapOff)) // TYPE_MAP_LIST
+
+        mapItems.sortBy { it.offset }
+
+        dataOut.writeUInt(mapItems.size)
+        for (item in mapItems) {
+            dataOut.writeUShort(item.type)
+            dataOut.writeUShort(0)
+            dataOut.writeUInt(item.size)
+            dataOut.writeUInt(item.offset)
         }
 
         val dataBytes = dataOut.toByteArray()
@@ -368,21 +523,21 @@ class DexFileBuilder {
         out.writeUInt(DexConstants.ENDIAN_CONSTANT) // endian_tag
         out.writeUInt(0) // link_size
         out.writeUInt(0) // link_off
-        out.writeUInt(0) // map_off (can be 0 or populated)
+        out.writeUInt(mapOff) // map_off (points to map_list in data section)
         out.writeUInt(stringIdsSize)
-        out.writeUInt(stringIdsOff)
+        out.writeUInt(if (stringIdsSize == 0) 0 else stringIdsOff)
         out.writeUInt(typeIdsSize)
-        out.writeUInt(typeIdsOff)
+        out.writeUInt(if (typeIdsSize == 0) 0 else typeIdsOff)
         out.writeUInt(protoIdsSize)
-        out.writeUInt(protoIdsOff)
+        out.writeUInt(if (protoIdsSize == 0) 0 else protoIdsOff)
         out.writeUInt(fieldIdsSize)
-        out.writeUInt(fieldIdsOff)
+        out.writeUInt(if (fieldIdsSize == 0) 0 else fieldIdsOff)
         out.writeUInt(methodIdsSize)
-        out.writeUInt(methodIdsOff)
+        out.writeUInt(if (methodIdsSize == 0) 0 else methodIdsOff)
         out.writeUInt(classDefsSize)
-        out.writeUInt(classDefsOff)
+        out.writeUInt(if (classDefsSize == 0) 0 else classDefsOff)
         out.writeUInt(dataBytes.size) // data_size
-        out.writeUInt(dataStart)      // data_off
+        out.writeUInt(if (dataBytes.isEmpty()) 0 else dataStart) // data_off
 
         // Write String IDs
         for (off in stringDataOffsets) {
