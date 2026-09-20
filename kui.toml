@@ -1,0 +1,16 @@
+[project]
+name = "kui4-platform"
+version = "0.1.0"
+application_id = "org.kui4.platform"
+description = "Pure Kotlin Application Platform — UI4 Framework & KUI Toolchain"
+
+[platform]
+kotlin_version = "2.4.20"
+target_jvm = "21"
+
+[android]
+min_sdk = 24
+target_sdk = 36
+
+[ui]
+theme = "system"
