@@ -1,8 +1,12 @@
-package hello
+import ui4.*
 
 /**
  * Baseline Hello UI4 Application
  */
-fun main() {
-    println("UI4 Hello Application initialized.")
+fun main() = app {
+    screen {
+        center {
+            text("Hello, KUI4! 👋")
+        }
+    }
 }
