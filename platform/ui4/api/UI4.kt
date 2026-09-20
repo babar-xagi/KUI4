@@ -40,6 +40,20 @@ typealias Rect = ui4.core.Rect
 typealias Constraints = ui4.core.Constraints
 typealias State<T> = ui4.state.State<T>
 typealias MutableState<T> = ui4.state.MutableState<T>
+typealias ScrollState = ui4.core.ScrollState
+typealias ScrollNode = ui4.layout.ScrollNode
+typealias TextFieldNode = ui4.layout.TextFieldNode
+typealias Navigator = ui4.navigation.Navigator
+typealias ScreenDestination = ui4.navigation.ScreenDestination
+typealias NamedScreen = ui4.navigation.NamedScreen
+typealias BackHandler = ui4.navigation.BackHandler
+typealias SavedStateRegistry = ui4.navigation.SavedStateRegistry
+typealias TextRange = ui4.text.TextRange
+typealias TextAlign = ui4.text.TextAlign
+typealias FontWeight = ui4.text.FontWeight
+typealias LayoutDirection = ui4.text.LayoutDirection
+typealias Role = ui4.accessibility.Role
+typealias SemanticsNode = ui4.accessibility.SemanticsNode
 
 fun <T> mutableStateOf(initial: T): MutableState<T> = ui4.state.mutableStateOf(initial)
 fun <T> state(initial: T): MutableState<T> = ui4.state.state(initial)
@@ -196,6 +210,49 @@ class UI4ContainerScope(val container: UiNode) {
         val node = ButtonNode(label = label, onClick = onClick).apply {
             this.modifier = modifier
             this.enabled = enabled
+        }
+        container.addChild(node)
+        return node
+    }
+
+    fun scroll(
+        state: ScrollState = ScrollState(),
+        modifier: Modifier = Modifier,
+        content: UI4ContainerScope.() -> Unit
+    ): ScrollNode {
+        val node = ScrollNode(state).apply {
+            this.modifier = modifier
+        }
+        container.addChild(node)
+        val scope = UI4ContainerScope(node)
+        scope.content()
+        return node
+    }
+
+    fun textField(
+        text: String = "",
+        placeholder: String = "Enter text...",
+        modifier: Modifier = Modifier,
+        onValueChanged: (String) -> Unit = {}
+    ): TextFieldNode {
+        val node = TextFieldNode(text, placeholder, onValueChanged).apply {
+            this.modifier = modifier
+        }
+        container.addChild(node)
+        return node
+    }
+
+    fun textField(
+        state: MutableState<String>,
+        placeholder: String = "Enter text...",
+        modifier: Modifier = Modifier
+    ): TextFieldNode {
+        val node = TextFieldNode(
+            text = state.value,
+            placeholder = placeholder,
+            onValueChanged = { state.value = it }
+        ).apply {
+            this.modifier = modifier
         }
         container.addChild(node)
         return node

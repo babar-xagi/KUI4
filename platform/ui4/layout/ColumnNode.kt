@@ -11,6 +11,7 @@ import ui4.core.Size
 import ui4.core.findFillHeight
 import ui4.core.findFillWidth
 import ui4.core.findPadding
+import ui4.core.findSize
 import ui4.core.findWeight
 import ui4.tree.UiNode
 
@@ -80,6 +81,11 @@ class ColumnNode(
 
         var desiredWidth = maxChildWidth + padding.horizontal
         var desiredHeight = usedHeight + totalGaps + padding.vertical
+
+        // Check explicit size modifier
+        val sizeMod = modifier.findSize()
+        if (sizeMod?.width != null) desiredWidth = sizeMod.width
+        if (sizeMod?.height != null) desiredHeight = sizeMod.height
 
         // Check fill modifiers
         val fillW = modifier.findFillWidth()

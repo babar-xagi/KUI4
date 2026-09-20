@@ -89,7 +89,7 @@ class RenderPipeline {
             }
         }
 
-        // 2. Node-specific visual element rendering (Phases 093, 094, 110, 111)
+        // 2. Node-specific visual element rendering (Phases 093, 094, 110, 111, 142)
         when (node) {
             is ButtonNode -> {
                 renderButton(node, canvas, bg, radius)
@@ -97,11 +97,26 @@ class RenderPipeline {
             is TextNode -> {
                 renderText(node, canvas)
             }
+            is ui4.layout.TextFieldNode -> {
+                renderTextField(node, canvas, bg, radius)
+            }
         }
 
-        // 3. Recursive child traversal in Z-order (Phase 095)
+        // 3. Recursive child traversal in Z-order with scroll translation (Phases 095, 120)
+        val isScroll = node is ui4.layout.ScrollNode
+        var scrollSave = 0
+        if (node is ui4.layout.ScrollNode) {
+            scrollSave = canvas.save()
+            canvas.clipRect(node.bounds)
+            canvas.translate(0f, -node.state.scrollOffset)
+        }
+
         for (child in node.children) {
             renderNode(child, canvas)
+        }
+
+        if (isScroll) {
+            canvas.restoreToCount(scrollSave)
         }
 
         // Restore canvas state
@@ -161,5 +176,42 @@ class RenderPipeline {
             style = textNode.style,
             fontSize = textNode.style.fontSize
         )
+    }
+
+    private fun renderTextField(
+        field: ui4.layout.TextFieldNode,
+        canvas: UiCanvas,
+        explicitBg: Color?,
+        explicitRadius: Float
+    ) {
+        val radius = if (explicitRadius > 0f) explicitRadius else 4f
+
+        // 1. Box / background
+        val fieldBg = explicitBg ?: Color(0.96f, 0.96f, 0.96f)
+        canvas.drawRoundRect(field.bounds, radius, fieldBg)
+
+        // 2. Selection highlight
+        val selRect = field.calculateSelectionRect()
+        if (selRect != null) {
+            canvas.drawRect(selRect, Color(0.7f, 0.85f, 1.0f, 0.6f))
+        }
+
+        // 3. Text or placeholder
+        val pad = field.modifier.findPadding() ?: Insets.symmetric(horizontal = 12f, vertical = 8f)
+        val textX = field.bounds.left + pad.left
+        val textY = field.bounds.top + pad.top
+
+        if (field.text.isNotEmpty()) {
+            val textColor = if (field.enabled) Color.Black else Color(0.55f, 0.55f, 0.55f)
+            canvas.drawText(field.text, textX, textY, textColor, TextStyle.Body, field.fontSize)
+        } else if (field.placeholder.isNotEmpty()) {
+            canvas.drawText(field.placeholder, textX, textY, Color(0.6f, 0.6f, 0.6f), TextStyle.Body, field.fontSize)
+        }
+
+        // 4. Cursor caret when focused
+        if (field.isFocused && field.enabled) {
+            val cursorRect = field.calculateCursorRect()
+            canvas.drawRect(cursorRect, Color.Black)
+        }
     }
 }
