@@ -32,6 +32,10 @@ private fun executeCommand(command: Command, args: List<String>, flags: Map<Stri
             val target = args.firstOrNull()?.let { Command.fromString(it) }
             Help.printHelp(target)
         }
+        Command.NEW -> {
+            val exitCode = kui.project.NewCommand.execute(args, flags)
+            if (exitCode != 0) System.exit(exitCode)
+        }
         Command.INFO -> {
             val exitCode = kui.project.InfoCommand.execute()
             if (exitCode != 0) System.exit(exitCode)
