@@ -43,10 +43,10 @@ object PackagingTask {
 
             // 1. Compile JVM .class files to classes.dex
             val dexBytes = if (classesDir.exists() && (classesDir.listFiles()?.isNotEmpty() == true)) {
-                ClassToDexCompiler.compileDirectory(classesDir, packageName = pkgName)
+                ClassToDexCompiler.compileDirectory(classesDir, packageName = pkgName, projectRoot = projectRoot)
             } else {
                 // Generate minimal fallback dex
-                ClassToDexCompiler.compileDirectory(classesDir, packageName = pkgName)
+                ClassToDexCompiler.compileDirectory(classesDir, packageName = pkgName, projectRoot = projectRoot)
             }
 
             // 2. Generate binary AndroidManifest.xml

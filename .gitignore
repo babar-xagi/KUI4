@@ -5,6 +5,7 @@
 *.ear
 
 # KUI build & cache artifacts
+build/
 .kui/
 .kui/build/
 .kui/cache/

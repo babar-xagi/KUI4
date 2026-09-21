@@ -188,7 +188,11 @@ if ($LASTEXITCODE -ne 0) {
 # 6. Checksum and Summary
 Write-Host "[5/5] Generating cryptographic verification checksum..." -ForegroundColor Yellow
 $MsiItem = Get-Item $MsiOutput
-$Hash = (Get-FileHash -Path $MsiOutput -Algorithm SHA256).Hash
+$Sha256 = [System.Security.Cryptography.SHA256]::Create()
+$Stream = [System.IO.File]::OpenRead($MsiOutput)
+$HashBytes = $Sha256.ComputeHash($Stream)
+$Stream.Close()
+$Hash = [System.BitConverter]::ToString($HashBytes).Replace("-", "").ToUpper()
 $HashFile = "$MsiOutput.sha256"
 "$Hash  $($MsiItem.Name)" | Out-File -Encoding ascii $HashFile
 

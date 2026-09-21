@@ -489,6 +489,31 @@ object ToolchainAndApkTest {
 
         val dexBytes = ClassToDexCompiler.compileDirectory(dir)
         assert(dexBytes.size > 112, "Compiled multi-class directory into single classes.dex")
+
+        // Dynamic UI Text Extraction Test
+        val mockRoot = File(".kui/build/test_ui_extract")
+        val mockSrc = File(mockRoot, "src")
+        mockSrc.mkdirs()
+        File(mockSrc, "main.kt").writeText("""
+            fun main() = app {
+                screen {
+                    center {
+                        text("Hello KUI4")
+                    }
+                }
+            }
+        """.trimIndent())
+        val extractedText = ClassToDexCompiler.extractUiText(mockRoot, mockRoot, emptyList())
+        assertEquals("Hello KUI4", extractedText, "Extracted user UI text from src/main.kt correctly")
+
+        File(mockSrc, "main.kt").writeText("""
+            column {
+                text("Title A")
+                text("Subtitle B")
+            }
+        """.trimIndent())
+        val multiExtracted = ClassToDexCompiler.extractUiText(mockRoot, mockRoot, emptyList())
+        assertEquals("Title A\n\nSubtitle B", multiExtracted, "Extracted multiple UI texts correctly")
     }
 
     // Phase 167: Pure Kotlin AXML Writer
@@ -706,6 +731,13 @@ object ToolchainAndApkTest {
         val phone = devices[1]
         assertEquals("offline", phone.state, "Phone state is 'offline'")
         assert(!phone.isOnline, "Offline phone isOnline is false")
+        assert(phone.isOffline, "Phone isOffline is true")
+
+        val unauthOutput = "108321541J013120  unauthorized  usb:1-1 transport_id:3"
+        val unauthDevices = DeviceManager.parseDeviceList(unauthOutput)
+        assertEquals(1, unauthDevices.size, "Parsed unauthorized device")
+        assert(unauthDevices[0].isUnauthorized, "Device isUnauthorized is true")
+        assert(!unauthDevices[0].isOnline, "Unauthorized device isOnline is false")
     }
 
     // Phase 179: APK Installation & App Launch Commands

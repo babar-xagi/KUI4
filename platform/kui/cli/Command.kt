@@ -20,6 +20,7 @@ enum class Command(
     BENCH("bench", "benchmarks", "kui bench [benchmark-name]"),
     PROFILE("profile", "profiling report", "kui profile"),
     UI_TREE("ui-tree", "print runtime UI tree later", "kui ui-tree"),
+    DEVICES("devices", "list connected devices", "kui devices"),
     HELP("help", "show help for commands", "kui help [command]"),
     VERSION("version", "print version information", "kui version");
 

@@ -16,6 +16,8 @@ data class Device(
     val transportId: String? = null
 ) {
     val isOnline: Boolean get() = state.equals("device", ignoreCase = true)
+    val isUnauthorized: Boolean get() = state.equals("unauthorized", ignoreCase = true)
+    val isOffline: Boolean get() = state.equals("offline", ignoreCase = true)
     val isEmulator: Boolean get() = serial.startsWith("emulator-")
 }
 
@@ -69,10 +71,23 @@ class DeviceManager(
         val result = executeAdb(*args.toTypedArray())
         val output = result.output + "\n" + result.error
         val isSuccess = result.isSuccess && output.contains("Success", ignoreCase = true)
+        val errorMessage = if (isSuccess) {
+            result.error
+        } else {
+            val rawErr = result.error.ifBlank { result.output }
+            when {
+                rawErr.contains("INSTALL_FAILED_USER_RESTRICTED", ignoreCase = true) ||
+                rawErr.contains("INSTALL_CANCELED_BY_USER", ignoreCase = true) ->
+                    "$rawErr\n[KUI Diagnostic] Device installation restricted: On your phone screen, accept the installation prompt, or in Developer Options turn ON 'Install via USB'."
+                rawErr.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE", ignoreCase = true) ->
+                    "$rawErr\n[KUI Diagnostic] Insufficient device storage: Free up storage space on your phone."
+                else -> rawErr
+            }
+        }
         return AdbResult(
             exitCode = if (isSuccess) 0 else (if (result.exitCode != 0) result.exitCode else 1),
             output = result.output,
-            error = result.error
+            error = errorMessage
         )
     }
 
@@ -152,14 +167,36 @@ class DeviceManager(
         fun findAdbPath(): String {
             val envAndroidHome = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
             if (!envAndroidHome.isNullOrBlank()) {
-                val candidate = File(envAndroidHome, "platform-tools/adb" + if (isWindows()) ".exe" else "")
+                val candidate = File(envAndroidHome, if (isWindows()) "platform-tools/adb.exe" else "platform-tools/adb")
                 if (candidate.exists()) return candidate.absolutePath
             }
 
-            val defaultWindows = File(System.getProperty("user.home"), "AppData/Local/Android/Sdk/platform-tools/adb.exe")
-            if (defaultWindows.exists()) return defaultWindows.absolutePath
+            if (isWindows()) {
+                val localAppData = System.getenv("LOCALAPPDATA")
+                if (!localAppData.isNullOrBlank()) {
+                    val candidate = File(localAppData, "Android\\Sdk\\platform-tools\\adb.exe")
+                    if (candidate.exists()) return candidate.absolutePath
+                }
 
-            return if (isWindows()) "adb.exe" else "adb"
+                val userHome = System.getProperty("user.home")
+                if (!userHome.isNullOrBlank()) {
+                    val candidate = File(userHome, "AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe")
+                    if (candidate.exists()) return candidate.absolutePath
+                }
+            }
+
+            // Search PATH
+            val exeName = if (isWindows()) "adb.exe" else "adb"
+            val pathVar = System.getenv("PATH") ?: ""
+            for (dir in pathVar.split(File.pathSeparatorChar)) {
+                val trimmed = dir.trim()
+                if (trimmed.isNotEmpty()) {
+                    val candidate = File(trimmed, exeName)
+                    if (candidate.exists() && candidate.isFile) return candidate.absolutePath
+                }
+            }
+
+            return exeName
         }
 
         private fun isWindows(): Boolean =

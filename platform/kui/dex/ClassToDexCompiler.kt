@@ -2,6 +2,7 @@ package kui.dex
 
 import kui.classfile.ClassFile
 import kui.classfile.ClassFileReader
+import kui.classfile.CpInfo
 import java.io.File
 
 /**
@@ -185,7 +186,13 @@ object ClassToDexCompiler {
     /**
      * Scans all .class files under classesDir and compiles them into a classes.dex file (Phase 166).
      */
-    fun compileDirectory(classesDir: File, outputDexFile: File? = null, packageName: String? = null): ByteArray {
+    fun compileDirectory(
+        classesDir: File,
+        outputDexFile: File? = null,
+        packageName: String? = null,
+        projectRoot: File? = null,
+        uiText: String? = null
+    ): ByteArray {
         val classFiles = classesDir.walkTopDown()
             .filter { it.isFile && it.extension == "class" }
             .sortedBy { it.relativeTo(classesDir).path }
@@ -200,6 +207,7 @@ object ClassToDexCompiler {
 
         val hasMainActivity = classFiles.any { it.nameWithoutExtension.equals("MainActivity", ignoreCase = true) }
         if (!hasMainActivity && packageName != null) {
+            val displayText = uiText ?: extractUiText(projectRoot, classesDir, classFiles)
             val mainActivityDesc = "L${packageName.replace('.', '/')}/MainActivity;"
             val mainActivity = DexClass(
                 classDescriptor = mainActivityDesc,
@@ -253,7 +261,7 @@ object ClassToDexCompiler {
                             0x0022.toShort(), 0x0000.toShort(),
                             // 5: invoke-direct {v0, v3}, TextView.<init>(Context)
                             0x2070.toShort(), 0x0000.toShort(), 0x0030.toShort(),
-                            // 8: const-string v1, "Hello Babar..."
+                            // 8: const-string v1, displayText
                             0x011A.toShort(), 0x0000.toShort(),
                             // 10: invoke-virtual {v0, v1}, TextView.setText(CharSequence)
                             0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
@@ -274,7 +282,7 @@ object ClassToDexCompiler {
                             DexInstructionFixup.MethodRef(1, "Landroid/app/Activity;", "onCreate", "V", listOf("Landroid/os/Bundle;")),
                             DexInstructionFixup.TypeRef(4, "Landroid/widget/TextView;"),
                             DexInstructionFixup.MethodRef(6, "Landroid/widget/TextView;", "<init>", "V", listOf("Landroid/content/Context;")),
-                            DexInstructionFixup.StringRef(9, "Hello Babar 👋\n\nRunning on KUI4 Pure Kotlin Platform! 🚀"),
+                            DexInstructionFixup.StringRef(9, displayText),
                             DexInstructionFixup.MethodRef(11, "Landroid/widget/TextView;", "setText", "V", listOf("Ljava/lang/CharSequence;")),
                             DexInstructionFixup.MethodRef(16, "Landroid/widget/TextView;", "setGravity", "V", listOf("I")),
                             DexInstructionFixup.MethodRef(21, "Landroid/widget/TextView;", "setTextSize", "V", listOf("F")),
@@ -292,5 +300,79 @@ object ClassToDexCompiler {
             outputDexFile.writeBytes(dexBytes)
         }
         return dexBytes
+    }
+
+    /**
+     * Dynamically extracts UI text strings defined in the user's project.
+     * Priority:
+     * 1. Direct parse of text("...") and button("...") calls in project Kotlin sources (src directory).
+     * 2. ConstantPool strings extracted from compiled JVM .class files.
+     * 3. Clean default fallback based on project/app name.
+     */
+    fun extractUiText(
+        projectRoot: File?,
+        classesDir: File,
+        classFiles: List<File>,
+        fallbackName: String = "KUI App"
+    ): String {
+        // 1. Search src/ directory for declared UI elements
+        val candidateSrcDirs = mutableListOf<File>()
+        if (projectRoot != null) {
+            candidateSrcDirs.add(File(projectRoot, "src"))
+        }
+        classesDir.parentFile?.parentFile?.let { candidateSrcDirs.add(File(it, "src")) }
+        classesDir.parentFile?.let { candidateSrcDirs.add(File(it, "src")) }
+
+        val srcDir = candidateSrcDirs.firstOrNull { it.exists() && it.isDirectory }
+        if (srcDir != null) {
+            val ktFiles = srcDir.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+            val textRegex = Regex("(?:text|button)\\s*\\(\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")
+            val extracted = mutableListOf<String>()
+            for (f in ktFiles) {
+                val content = f.readText()
+                for (m in textRegex.findAll(content)) {
+                    val rawStr = m.groupValues[1]
+                    val unescaped = rawStr
+                        .replace("\\n", "\n")
+                        .replace("\\t", "\t")
+                        .replace("\\\"", "\"")
+                        .replace("\\\\", "\\")
+                    if (unescaped.isNotBlank()) {
+                        extracted.add(unescaped)
+                    }
+                }
+            }
+            if (extracted.isNotEmpty()) {
+                return extracted.joinToString("\n\n")
+            }
+        }
+
+        // 2. Fallback: inspect ConstantPool of compiled .class files
+        val cpStrings = mutableListOf<String>()
+        for (cfFile in classFiles) {
+            try {
+                val parsed = ClassFileReader.read(cfFile)
+                for (cp in parsed.constantPool) {
+                    if (cp is CpInfo.StringCp) {
+                        val str = parsed.getUtf8(cp.stringIndex)
+                        if (str.isNotBlank() &&
+                            !str.startsWith("\$this\$") &&
+                            !str.startsWith("kotlin/") &&
+                            !str.startsWith("Lkotlin") &&
+                            !str.startsWith("\$") &&
+                            str != "INSTANCE"
+                        ) {
+                            cpStrings.add(str)
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+        }
+        if (cpStrings.isNotEmpty()) {
+            return cpStrings.distinct().joinToString("\n\n")
+        }
+
+        // 3. Fallback
+        return "Hello from $fallbackName!\n\nRunning on KUI Pure Kotlin Platform 🚀"
     }
 }

@@ -105,3 +105,36 @@ Everything is set up! You are ready to build pure Kotlin apps with KUI.
 ```
 
 If any prerequisite is missing or misconfigured, `kui doctor` will output instructions on how to resolve it.
+
+---
+
+## 📱 Connecting Your Android Mobile Phone (for `kui run`)
+
+To launch your apps directly from your computer onto your physical Android phone with a single `kui run` command:
+
+1. **Enable Developer Options on your phone:**
+   - Go to **Settings** -> **About Phone** (or **System** -> **About Phone**).
+   - Find **Build Number** and tap it **7 times** until you see the message *"You are now a developer!"*.
+2. **Enable USB Debugging:**
+   - Go to **Settings** -> **Developer Options** (or **System** -> **Developer Options**).
+   - Toggle **USB Debugging** to **ON**.
+   - *(Important for Xiaomi / Tecno / Realme / Oppo / Vivo)*: Also toggle **Install via USB** to **ON**.
+3. **Connect your Phone via USB:**
+   - Plug your phone into your laptop/PC using a **USB data cable** (ensure the cable supports data transfer, not charging-only).
+   - Swipe down the Android notification shade, tap **Charging this device via USB**, and select **File Transfer** (or **MTP**).
+4. **Grant USB Debugging Authorization:**
+   - Unlock your phone screen. A popup dialog will appear:
+     > *"Allow USB debugging? The computer's RSA key fingerprint is: ..."*
+   - Check the box: ☑ **Always allow from this computer**.
+   - Tap **Allow**.
+5. **Verify Device Connection:**
+   - In your computer terminal, run:
+     ```powershell
+     kui devices
+     ```
+   - Your phone will display with `[ONLINE]` status:
+     ```
+     Found 1 connected device(s):
+       [ONLINE]       108321541J013120     (Physical Device: TECNO_BG7)
+     ```
+   - Now simply run `kui run` inside any KUI project and your app will immediately install and launch on your phone screen!

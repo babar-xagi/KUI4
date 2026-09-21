@@ -36,13 +36,57 @@ object RunCommand {
         val dm = DeviceManager()
         val devices = dm.listDevices()
         val onlineDevice = devices.firstOrNull { it.isOnline }
-
         if (onlineDevice == null) {
-            println("[KUI] Note: No connected Android device or emulator detected via ADB.")
-            println("[KUI] Signed APK is ready for manual install or deployment:")
-            println("      ${apkFile.absolutePath}")
-            println("[KUI] Connect a device via USB (with USB Debugging enabled) or start an emulator and re-run 'kui run'.")
-            return 0
+            val unauthorizedDevice = devices.firstOrNull { it.isUnauthorized }
+            val offlineDevice = devices.firstOrNull { it.isOffline }
+
+            if (unauthorizedDevice != null) {
+                System.err.println()
+                System.err.println("==================================================================")
+                System.err.println("[KUI] ⚠️  ANDROID DEVICE ATTACHED BUT UNAUTHORIZED: ${unauthorizedDevice.serial}")
+                System.err.println("==================================================================")
+                System.err.println("ADB has detected your phone, but USB Debugging permission was not granted.")
+                System.err.println()
+                System.err.println("👉 ACTION REQUIRED ON YOUR PHONE SCREEN:")
+                System.err.println("   1. Unlock your phone screen right now.")
+                System.err.println("   2. A prompt 'Allow USB debugging?' has appeared.")
+                System.err.println("   3. Check the box: ☑ 'Always allow from this computer'")
+                System.err.println("   4. Tap 'Allow'.")
+                System.err.println("   5. Re-run 'kui run'!")
+                System.err.println("==================================================================")
+                return 1
+            } else if (offlineDevice != null) {
+                System.err.println()
+                System.err.println("==================================================================")
+                System.err.println("[KUI] ⚠️  ANDROID DEVICE ATTACHED BUT OFFLINE: ${offlineDevice.serial}")
+                System.err.println("==================================================================")
+                System.err.println("👉 ACTION REQUIRED TO RECONNECT:")
+                System.err.println("   1. Unplug and re-plug your USB cable.")
+                System.err.println("   2. On your phone: Settings -> Developer Options -> turn 'USB Debugging' OFF and ON.")
+                System.err.println("   3. Re-run 'kui run'!")
+                System.err.println("==================================================================")
+                return 1
+            } else if (devices.isNotEmpty()) {
+                val other = devices.first()
+                System.err.println("[KUI] ⚠️ Device ${other.serial} detected in state: '${other.state}' (not 'device'/online).")
+                System.err.println("[KUI] Reconnect USB or restart ADB to resolve.")
+                return 1
+            } else {
+                println("[KUI] Note: No connected Android device or emulator detected via ADB.")
+                println("[KUI] Signed APK is ready for manual install or deployment:")
+                println("      ${apkFile.absolutePath}")
+                println()
+                println("[KUI] 📱 How to connect your Android phone for 1-click install & launch:")
+                println("      1. Connect phone to laptop using a USB data cable (ensure it supports data transfer).")
+                println("      2. On phone: Go to Settings -> About Phone -> Tap 'Build Number' 7 times to enable Developer Mode.")
+                println("      3. Go to Settings -> System -> Developer Options:")
+                println("         • Enable 'USB Debugging'.")
+                println("         • (If present on Xiaomi/Tecno/Realme): Enable 'Install via USB'.")
+                println("      4. Pull down phone notification shade, tap 'USB charging this device', and select 'File Transfer' / 'MTP'.")
+                println("      5. When 'Allow USB debugging?' appears on screen, check 'Always allow' and tap 'Allow'.")
+                println("      6. Run 'kui devices' to verify status, then re-run 'kui run'!")
+                return 0
+            }
         }
 
         println("[KUI] Target device: ${onlineDevice.serial} (${onlineDevice.model ?: onlineDevice.product ?: "Android Device"})")
@@ -82,11 +126,7 @@ object RunCommand {
         }
 
         val dm = DeviceManager()
-        val onlineDevice = dm.listDevices().firstOrNull { it.isOnline }
-        if (onlineDevice == null) {
-            System.err.println("[KUI] Error: No online Android device found.")
-            return 1
-        }
+        val onlineDevice = findOnlineOrDiagnose(dm) ?: return 1
 
         println("[KUI] Installing to ${onlineDevice.serial}...")
         val res = dm.installApk(apkFile, onlineDevice.serial)
@@ -110,11 +150,7 @@ object RunCommand {
         }
 
         val dm = DeviceManager()
-        val onlineDevice = dm.listDevices().firstOrNull { it.isOnline }
-        if (onlineDevice == null) {
-            System.err.println("[KUI] Error: No online Android device found.")
-            return 1
-        }
+        val onlineDevice = findOnlineOrDiagnose(dm) ?: return 1
 
         val pkgName = config.project.applicationId ?: "com.example.${config.project.name.lowercase().replace('-', '_')}"
         println("[KUI] Launching $pkgName...")
@@ -125,5 +161,31 @@ object RunCommand {
         }
         println("[KUI] Launch: SUCCESS")
         return 0
+    }
+
+    private fun findOnlineOrDiagnose(dm: DeviceManager): Device? {
+        val devices = dm.listDevices()
+        val onlineDevice = devices.firstOrNull { it.isOnline }
+        if (onlineDevice != null) return onlineDevice
+
+        val unauthorized = devices.firstOrNull { it.isUnauthorized }
+        val offline = devices.firstOrNull { it.isOffline }
+        when {
+            unauthorized != null -> {
+                System.err.println("[KUI] ⚠️ Device ${unauthorized.serial} is UNAUTHORIZED.")
+                System.err.println("[KUI] Check your phone screen now and tap 'Allow USB debugging'!")
+            }
+            offline != null -> {
+                System.err.println("[KUI] ⚠️ Device ${offline.serial} is OFFLINE.")
+                System.err.println("[KUI] Reconnect USB cable or toggle USB debugging.")
+            }
+            devices.isNotEmpty() -> {
+                System.err.println("[KUI] ⚠️ Device ${devices.first().serial} is in '${devices.first().state}' state.")
+            }
+            else -> {
+                System.err.println("[KUI] Error: No online Android device found via ADB. Run 'kui devices' for info.")
+            }
+        }
+        return null
     }
 }

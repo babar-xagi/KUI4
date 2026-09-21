@@ -101,55 +101,61 @@ object BuildCommand {
         val taskCacheFile = cacheDirs.getTaskCacheFile(cacheKey.key)
         val classesDir = buildDirs.classesDir
         val isCached = taskCacheFile.exists() && classesDir.exists() && (classesDir.listFiles()?.isNotEmpty() == true)
+        val apkFile = File(root, "build/outputs/apk/debug/app-debug.apk")
 
-        if (isCached && !cleanFirst) {
+        if (isCached && apkFile.exists() && !cleanFirst) {
             println("[KUI] Compile Kotlin: UP-TO-DATE (cached ${cacheKey.key.take(8)})")
+            println("[KUI] APK: UP-TO-DATE (${apkFile.length()} bytes)")
             println("[KUI] BUILD SUCCESS (total: ${totalTimer.elapsedMillis()}ms)")
             return 0
         }
 
-        // 7. Compile Kotlin sources (Phase 040, 048, 051)
-        println("[KUI] Compiling ${sources.size} Kotlin source(s) with kotlinc ${kotlinc.version}...")
+        if (!isCached || cleanFirst) {
+            // 7. Compile Kotlin sources (Phase 040, 048, 051)
+            println("[KUI] Compiling ${sources.size} Kotlin source(s) with kotlinc ${kotlinc.version}...")
 
-        if (verbose) {
-            println("[KUI:DEBUG] kotlinc: ${kotlinc.path}")
-            println("[KUI:DEBUG] classpath: ${classpath.asClasspathString()}")
-            println("[KUI:DEBUG] sources: ${sources.map { it.name }}")
-        }
-
-        val compileTimer = Stopwatch.start()
-        val compileResult = KotlinCompiler.compile(
-            sources = sources,
-            outputDir = classesDir,
-            classpath = classpath,
-            kotlincPath = kotlinc.path,
-            jvmTarget = "21",
-            verbose = verbose,
-            workingDir = root
-        )
-        val compileDurationMs = compileTimer.elapsedMillis()
-
-        if (verbose && compileResult.commandLine.isNotEmpty()) {
-            println("[KUI:DEBUG] command: ${compileResult.commandLine.joinToString(" ")}")
-        }
-
-        // 8. Handle Failures & Concise UX (Phase 052)
-        if (!compileResult.isSuccess) {
-            System.err.println("[KUI] Compilation failed:")
-            val concise = DiagnosticParser.formatConcise(compileResult.diagnostics, root)
-            if (concise.isNotBlank()) {
-                System.err.println(concise)
-            } else {
-                System.err.println(compileResult.rawOutput.ifBlank { "Unknown compiler error." })
+            if (verbose) {
+                println("[KUI:DEBUG] kotlinc: ${kotlinc.path}")
+                println("[KUI:DEBUG] classpath: ${classpath.asClasspathString()}")
+                println("[KUI:DEBUG] sources: ${sources.map { it.name }}")
             }
-            return 1
+
+            val compileTimer = Stopwatch.start()
+            val compileResult = KotlinCompiler.compile(
+                sources = sources,
+                outputDir = classesDir,
+                classpath = classpath,
+                kotlincPath = kotlinc.path,
+                jvmTarget = "21",
+                verbose = verbose,
+                workingDir = root
+            )
+            val compileDurationMs = compileTimer.elapsedMillis()
+
+            if (verbose && compileResult.commandLine.isNotEmpty()) {
+                println("[KUI:DEBUG] command: ${compileResult.commandLine.joinToString(" ")}")
+            }
+
+            // 8. Handle Failures & Concise UX (Phase 052)
+            if (!compileResult.isSuccess) {
+                System.err.println("[KUI] Compilation failed:")
+                val concise = DiagnosticParser.formatConcise(compileResult.diagnostics, root)
+                if (concise.isNotBlank()) {
+                    System.err.println(concise)
+                } else {
+                    System.err.println(compileResult.rawOutput.ifBlank { "Unknown compiler error." })
+                }
+                return 1
+            }
+
+            // 9. Save cache metadata (Phase 048)
+            taskCacheFile.parentFile?.mkdirs()
+            taskCacheFile.writeText("key=${cacheKey.key}\ncompiled_at=${System.currentTimeMillis()}\n")
+
+            println("[KUI] Compiled ${sources.size} source file(s) in ${compileDurationMs}ms -> ${classesDir.name}/")
+        } else {
+            println("[KUI] Compile Kotlin: UP-TO-DATE (cached ${cacheKey.key.take(8)})")
         }
-
-        // 9. Save cache metadata (Phase 048)
-        taskCacheFile.parentFile?.mkdirs()
-        taskCacheFile.writeText("key=${cacheKey.key}\ncompiled_at=${System.currentTimeMillis()}\n")
-
-        println("[KUI] Compiled ${sources.size} source file(s) in ${compileDurationMs}ms -> ${classesDir.name}/")
 
         // 10. Package, zipalign, and sign APK (Phases 169-176)
         println("[KUI] Packaging APK: classes.dex + AndroidManifest.xml...")
