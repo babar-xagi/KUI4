@@ -1,0 +1,68 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="KUI Platform (Kotlin UI)"
+           Manufacturer="KUI Project"
+           Version="0.1.0"
+           UpgradeCode="D74A1B29-4F58-4C82-962E-73E8A42598D1"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of KUI Platform is already installed." />
+
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Standard Program Files (64-bit) destination -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="KUI" />
+    </StandardDirectory>
+
+    <!-- Start Menu Shortcuts -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="KUI Platform" />
+    </StandardDirectory>
+
+    <!-- Installation Component Groups -->
+    <ComponentGroup Id="ProductFilesGroup" Directory="INSTALLFOLDER">
+      <!-- Recursively harvests all staged files -->
+      <Files Include="staging\**" />
+
+      <!-- Automatic Environment PATH Registration -->
+      <Component Id="PathEnvComponent" Guid="D82E1984-75F2-4EA1-9238-E9E524D1E5A1" KeyPath="yes">
+        <Environment Id="PATH"
+                     Name="PATH"
+                     Value="[INSTALLFOLDER]"
+                     Permanent="no"
+                     Part="last"
+                     Action="set"
+                     System="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Start Menu Shortcut Component -->
+    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="8FA72351-38B6-4F8A-98F1-71B0452C9F8A">
+        <Shortcut Id="KuiPromptShortcut"
+                  Name="KUI Command Prompt"
+                  Description="Open a command prompt ready for KUI"
+                  Target="[SystemFolder]cmd.exe"
+                  Arguments="/k echo Welcome to KUI (Kotlin UI) Platform! &amp; kui doctor"
+                  WorkingDirectory="PersonalFolder" />
+        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\KUI\Platform"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Main Feature Hierarchy -->
+    <Feature Id="MainFeature" Title="KUI Platform and Toolchain" Level="1">
+      <ComponentGroupRef Id="ProductFilesGroup" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+    </Feature>
+
+    <!-- Graphical User Interface (InstallDir Wizard) -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+
+  </Package>
+</Wix>

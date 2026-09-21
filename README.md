@@ -42,22 +42,36 @@ Traditional Android development requires **15GB+** of downloads (Android Studio,
 
 You can install KUI either by cloning the repository or downloading the release archive.
 
-### Option 1: Clone with Git (Recommended)
+### Option 1: 🪟 Windows One-Click Installer (.msi) — Recommended for Windows
+
+For Windows users who want an effortless one-click setup with automatic `PATH` configuration:
+
+1. 📥 **[Download kui-v0.1.0-windows-x64.msi (5.76 MB)](https://github.com/babar-xagi/KUI4/raw/main/dist/kui-v0.1.0-windows-x64.msi)**
+2. Double-click the `.msi` to run the setup wizard.
+3. The installer automatically:
+   - Installs KUI to `C:\Program Files\KUI`
+   - Configures the system `PATH` environment variable automatically
+   - Adds a "KUI Command Prompt" shortcut to your Start Menu
+4. Open any terminal and run `kui doctor`!
+
+---
+
+### Option 2: Clone with Git
 
 ```bash
 # Clone the repository
 git clone https://github.com/babar-xagi/KUI4.git C:\tools\KUI4
 ```
 
-### Option 2: Download Release Archive (.zip)
+### Option 3: Download Source Archive (.zip)
 
-1. Download the latest release from GitHub:
+1. Download the latest release source from GitHub:
    👉 **[Download KUI v0.1.0 (.zip)](https://github.com/babar-xagi/KUI4/archive/refs/tags/v0.1.0.zip)**
 2. Extract the archive to your preferred directory (e.g. `C:\tools\KUI4` or `~/tools/KUI4`).
 
 ---
 
-### Set Environment PATH
+### Set Environment PATH (Manual Setup for Git / ZIP)
 
 Add the KUI directory to your system `PATH`:
 

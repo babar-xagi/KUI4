@@ -56,6 +56,13 @@ Expected output: `info: kotlinc-jvm 2.x.x`.
 
 ### Step 3: Set Up KUI CLI
 
+#### Method A: 🪟 Windows One-Click Installer (.msi) — Recommended for Windows
+1. Download the Windows installer: [**`kui-v0.1.0-windows-x64.msi`**](https://github.com/babar-xagi/KUI4/raw/main/dist/kui-v0.1.0-windows-x64.msi)
+2. Double-click the `.msi` file and click **Install**.
+3. The installer automatically installs KUI to `C:\Program Files\KUI` and configures your system `PATH` environment variable.
+4. You are done! Open any terminal and type `kui doctor`.
+
+#### Method B: Manual Clone or Download
 Clone the KUI repository or download the release archive:
 ```powershell
 git clone https://github.com/babar-xagi/KUI4.git C:\tools\KUI4
