@@ -27,6 +27,13 @@ Native Android application
 
 ---
 
+## 📚 Documentation
+
+- **[Developer & Contributor Guide](docs/developer/README.md)**: Deep dive into project architecture, directory breakdown, file purposes, pure Kotlin DEX compiler, binary AXML emitter, APK v2 signing, and the UI4 runtime engine.
+- **[User Guide & Tutorials](docs/user/README.md)**: Complete guide covering system requirements, installation, project scaffolding (`kui new`), CLI commands (`kui build/run/test`), UI components, and real-world code cookbooks.
+
+---
+
 ## 📁 Repository Structure
 
 ```text
