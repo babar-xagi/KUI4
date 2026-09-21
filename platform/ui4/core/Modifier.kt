@@ -130,11 +130,20 @@ data class EnabledModifier(val enabled: Boolean) : Modifier.Element {
 fun Modifier.padding(all: Float): Modifier =
     then(PaddingModifier(Insets.all(all)))
 
+fun Modifier.padding(all: Int): Modifier =
+    then(PaddingModifier(Insets.all(all.toFloat())))
+
 fun Modifier.padding(horizontal: Float = 0f, vertical: Float = 0f): Modifier =
     then(PaddingModifier(Insets.symmetric(horizontal, vertical)))
 
+fun Modifier.padding(horizontal: Int = 0, vertical: Int = 0): Modifier =
+    then(PaddingModifier(Insets.symmetric(horizontal.toFloat(), vertical.toFloat())))
+
 fun Modifier.padding(left: Float = 0f, top: Float = 0f, right: Float = 0f, bottom: Float = 0f): Modifier =
     then(PaddingModifier(Insets(left, top, right, bottom)))
+
+fun Modifier.padding(left: Int = 0, top: Int = 0, right: Int = 0, bottom: Int = 0): Modifier =
+    then(PaddingModifier(Insets(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())))
 
 fun Modifier.padding(insets: Insets): Modifier =
     then(PaddingModifier(insets))
@@ -142,17 +151,32 @@ fun Modifier.padding(insets: Insets): Modifier =
 fun Modifier.background(color: Color): Modifier =
     then(BackgroundModifier(color))
 
+fun Modifier.backgroundColor(color: Color): Modifier =
+    then(BackgroundModifier(color))
+
 fun Modifier.size(size: Float): Modifier =
     then(SizeModifier(width = size, height = size))
+
+fun Modifier.size(size: Int): Modifier =
+    then(SizeModifier(width = size.toFloat(), height = size.toFloat()))
 
 fun Modifier.size(width: Float, height: Float): Modifier =
     then(SizeModifier(width = width, height = height))
 
+fun Modifier.size(width: Int, height: Int): Modifier =
+    then(SizeModifier(width = width.toFloat(), height = height.toFloat()))
+
 fun Modifier.width(width: Float): Modifier =
     then(SizeModifier(width = width, height = null))
 
+fun Modifier.width(width: Int): Modifier =
+    then(SizeModifier(width = width.toFloat(), height = null))
+
 fun Modifier.height(height: Float): Modifier =
     then(SizeModifier(width = null, height = height))
+
+fun Modifier.height(height: Int): Modifier =
+    then(SizeModifier(width = null, height = height.toFloat()))
 
 fun Modifier.fillMaxWidth(fraction: Float = 1.0f): Modifier =
     then(FillWidthModifier(fraction))
@@ -171,6 +195,9 @@ fun Modifier.alpha(alpha: Float): Modifier =
 
 fun Modifier.rounded(radius: Float): Modifier =
     then(RoundedModifier(radius))
+
+fun Modifier.rounded(radius: Int): Modifier =
+    then(RoundedModifier(radius.toFloat()))
 
 fun Modifier.clip(clip: Boolean = true): Modifier =
     then(ClipModifier(clip))

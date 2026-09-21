@@ -5,6 +5,8 @@ package ui4.core
  */
 data class Color(val argb: Long) {
 
+    constructor(argb: Int) : this((argb.toLong()) and 0xFFFFFFFFL)
+
     constructor(red: Float, green: Float, blue: Float, alpha: Float = 1.0f) : this(
         (((alpha.coerceIn(0f, 1f) * 255f).toInt() and 0xFF).toLong() shl 24) or
         (((red.coerceIn(0f, 1f) * 255f).toInt() and 0xFF).toLong() shl 16) or
@@ -48,6 +50,13 @@ data class Color(val argb: Long) {
         val Gray = Color(0xFF888888L)
         val LightGray = Color(0xFFCCCCCCL)
         val DarkGray = Color(0xFF444444L)
+        val Purple = Color(0xFF8B5CF6L)
+        val Indigo = Color(0xFF6366F1L)
+        val Orange = Color(0xFFF97316L)
+        val Teal = Color(0xFF14B8A6L)
+        val Pink = Color(0xFFEC4899L)
+
+        fun hex(value: String): Color = parseHex(value)
 
         fun fromRgb(red: Int, green: Int, blue: Int): Color =
             fromArgb(255, red, green, blue)

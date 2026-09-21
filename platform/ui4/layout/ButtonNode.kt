@@ -21,6 +21,12 @@ class ButtonNode(
 
     constructor(label: String, onClick: () -> Unit) : this(label, onClick, NodeIdGenerator.next())
 
+    var backgroundColor: ui4.core.Color? = null
+    var textColor: ui4.core.Color? = null
+    var text: String
+        get() = label
+        set(value) { label = value }
+
     init {
         this.onClick = onClick
         this.isFocusable = true

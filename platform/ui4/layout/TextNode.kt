@@ -11,13 +11,31 @@ import ui4.core.findPadding
 import ui4.tree.UiNode
 
 /**
- * Text typography styles.
+ * Text typography styles supporting both preset constants and custom configurations.
  */
-enum class TextStyle(val fontSize: Float) {
-    Headline(28f),
-    Title(20f),
-    Body(14f),
-    Caption(11f)
+data class TextStyle(
+    val fontSize: Float = 14f,
+    val fontWeight: ui4.text.FontWeight = ui4.text.FontWeight.Normal,
+    val color: ui4.core.Color? = null,
+    val fontFamily: String = "System",
+    val textAlign: ui4.text.TextAlign = ui4.text.TextAlign.Start
+) {
+    constructor(
+        fontSize: Int,
+        fontWeight: ui4.text.FontWeight = ui4.text.FontWeight.Normal,
+        color: ui4.core.Color? = null,
+        fontFamily: String = "System",
+        textAlign: ui4.text.TextAlign = ui4.text.TextAlign.Start
+    ) : this(fontSize.toFloat(), fontWeight, color, fontFamily, textAlign)
+
+    fun copy(fontSize: Int): TextStyle = copy(fontSize = fontSize.toFloat())
+
+    companion object {
+        val Headline = TextStyle(fontSize = 28f, fontWeight = ui4.text.FontWeight.Bold)
+        val Title = TextStyle(fontSize = 20f, fontWeight = ui4.text.FontWeight.Medium)
+        val Body = TextStyle(fontSize = 14f, fontWeight = ui4.text.FontWeight.Normal)
+        val Caption = TextStyle(fontSize = 11f, fontWeight = ui4.text.FontWeight.Normal)
+    }
 }
 
 /**

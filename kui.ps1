@@ -46,5 +46,5 @@ if ($NeedCompile) {
 }
 
 # Execute KUI CLI
-& java -cp $JarPath kui.cli.MainKt $args
+& java "-Dkui.home=$ScriptDir" -cp $JarPath kui.cli.MainKt $args
 exit $LASTEXITCODE

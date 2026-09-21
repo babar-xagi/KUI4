@@ -326,7 +326,8 @@ object ClassToDexCompiler {
         val srcDir = candidateSrcDirs.firstOrNull { it.exists() && it.isDirectory }
         if (srcDir != null) {
             val ktFiles = srcDir.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
-            val textRegex = Regex("(?:text|button)\\s*\\(\\s*\"((?:[^\"\\\\]|\\\\.)*)\"")
+            val textRegex = Regex("""(?:\btext\b|\bbutton\b)\s*\(\s*(?:(?:text|label|value)\s*=\s*)?"((?:[^"\\]|\\.)*)"""")
+            val namedArgRegex = Regex("""(?:\btext\b|\bbutton\b)\s*\([^)]*?(?:text|label|value)\s*=\s*"((?:[^"\\]|\\.)*)"""")
             val extracted = mutableListOf<String>()
             for (f in ktFiles) {
                 val content = f.readText()
@@ -338,6 +339,17 @@ object ClassToDexCompiler {
                         .replace("\\\"", "\"")
                         .replace("\\\\", "\\")
                     if (unescaped.isNotBlank()) {
+                        extracted.add(unescaped)
+                    }
+                }
+                for (m in namedArgRegex.findAll(content)) {
+                    val rawStr = m.groupValues[1]
+                    val unescaped = rawStr
+                        .replace("\\n", "\n")
+                        .replace("\\t", "\t")
+                        .replace("\\\"", "\"")
+                        .replace("\\\\", "\\")
+                    if (unescaped.isNotBlank() && !extracted.contains(unescaped)) {
                         extracted.add(unescaped)
                     }
                 }

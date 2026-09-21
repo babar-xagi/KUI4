@@ -65,3 +65,15 @@ fun <T> mutableStateOf(initial: T): MutableState<T> = StateImpl(initial)
  * Convenience DSL function for creating a state container (Phase 101).
  */
 fun <T> state(initial: T): MutableState<T> = StateImpl(initial)
+
+/**
+ * Delegate operator for reading reactive state: `val x by state`
+ */
+operator fun <T> State<T>.getValue(thisRef: Any?, property: kotlin.reflect.KProperty<*>): T = value
+
+/**
+ * Delegate operator for mutating reactive state: `var x by mutableStateOf`
+ */
+operator fun <T> MutableState<T>.setValue(thisRef: Any?, property: kotlin.reflect.KProperty<*>, value: T) {
+    this.value = value
+}
