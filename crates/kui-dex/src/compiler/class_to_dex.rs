@@ -240,6 +240,108 @@ impl ClassToDexCompiler {
             }],
         };
 
+        let mut instructions = Vec::new();
+        let mut fixups = Vec::new();
+
+        // 0: invoke-super {v3, v4}, Activity.onCreate(Bundle)
+        instructions.push(0x206F);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/app/Activity;".to_string(),
+            name: "onCreate".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/os/Bundle;".to_string()],
+        });
+        instructions.push(0x0043);
+
+        // 3: new-instance v0, TextView
+        instructions.push(0x0022);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::TypeRef {
+            offset_in_instructions: instructions.len() - 1,
+            type_descriptor: "Landroid/widget/TextView;".to_string(),
+        });
+
+        // 5: invoke-direct {v0, v3}, TextView.<init>(Context)
+        instructions.push(0x2070);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "<init>".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/content/Context;".to_string()],
+        });
+        instructions.push(0x0030);
+
+        // 8: const-string v1, displayText
+        instructions.push(0x011A);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::StringRef {
+            offset_in_instructions: instructions.len() - 1,
+            string: display_text.to_string(),
+        });
+
+        // 10: invoke-virtual {v0, v1}, TextView.setText(CharSequence)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "setText".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Ljava/lang/CharSequence;".to_string()],
+        });
+        instructions.push(0x0010);
+
+        // 13: const/16 v1, 17 (Gravity.CENTER)
+        instructions.push(0x0113);
+        instructions.push(17);
+
+        // 15: invoke-virtual {v0, v1}, TextView.setGravity(int)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "setGravity".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["I".to_string()],
+        });
+        instructions.push(0x0010);
+
+        // 18: const/high16 v1, 24.0f (0x41C00000)
+        instructions.push(0x0115);
+        instructions.push(0x41C0);
+
+        // 20: invoke-virtual {v0, v1}, TextView.setTextSize(float)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "setTextSize".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["F".to_string()],
+        });
+        instructions.push(0x0010);
+
+        // 23: invoke-virtual {v3, v0}, Activity.setContentView(View)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/app/Activity;".to_string(),
+            name: "setContentView".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/view/View;".to_string()],
+        });
+        instructions.push(0x0003);
+
+        // 26: return-void
+        instructions.push(OP_RETURN_VOID as u16);
+
         let on_create_method = DexMethod {
             class_descriptor: main_activity_desc.clone(),
             name: "onCreate".to_string(),
@@ -250,82 +352,203 @@ impl ClassToDexCompiler {
             registers_size: 5,
             ins_size: 2,
             outs_size: 2,
+            instructions,
+            instruction_fixups: fixups,
+        };
+
+        DexClass {
+            class_descriptor: main_activity_desc,
+            superclass_descriptor: "Landroid/app/Activity;".to_string(),
+            interface_descriptors: Vec::new(),
+            access_flags: 0x0001, // ACC_PUBLIC
+            source_file: Some("MainActivity.kt".to_string()),
+            direct_methods: vec![init_method],
+            virtual_methods: vec![on_create_method],
+            static_fields: Vec::new(),
+            instance_fields: Vec::new(),
+        }
+    }
+
+    /// Builds a synthesized MainActivity with custom UiMetadata (background, text color, alignment).
+    pub fn build_main_activity_with_meta(package_name: &str, meta: &crate::compiler::ui_extractor::UiMetadata) -> DexClass {
+        let clean_pkg = package_name.replace('.', "/");
+        let main_activity_desc = format!("L{}/MainActivity;", clean_pkg);
+
+        let init_method = DexMethod {
+            class_descriptor: main_activity_desc.clone(),
+            name: "<init>".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: Vec::new(),
+            access_flags: 0x10001, // ACC_PUBLIC | ACC_CONSTRUCTOR
+            is_direct: true,
+            registers_size: 1,
+            ins_size: 1,
+            outs_size: 1,
             instructions: vec![
-                // 0: invoke-super {v3, v4}, Activity.onCreate(Bundle)
-                0x206F, 0x0000, 0x0043,
-                // 3: new-instance v0, TextView
-                0x0022, 0x0000,
-                // 5: invoke-direct {v0, v3}, TextView.<init>(Context)
-                0x2070, 0x0000, 0x0030,
-                // 8: const-string v1, displayText
-                0x011A, 0x0000,
-                // 10: invoke-virtual {v0, v1}, TextView.setText(CharSequence)
-                0x206E, 0x0000, 0x0010,
-                // 13: const/16 v1, 17 (Gravity.CENTER)
-                0x0113, 17,
-                // 15: invoke-virtual {v0, v1}, TextView.setGravity(int)
-                0x206E, 0x0000, 0x0010,
-                // 18: const/high16 v1, 24.0f (0x41C00000)
-                0x0115, 0x41C0,
-                // 20: invoke-virtual {v0, v1}, TextView.setTextSize(float)
-                0x206E, 0x0000, 0x0010,
-                // 23: invoke-virtual {v3, v0}, Activity.setContentView(View)
-                0x206E, 0x0000, 0x0003,
-                // 26: return-void
+                0x1070, 0x0000, 0x0000,
                 OP_RETURN_VOID as u16,
             ],
             instruction_fixups: vec![
                 DexInstructionFixup::MethodRef {
                     offset_in_instructions: 1,
                     class_descriptor: "Landroid/app/Activity;".to_string(),
-                    name: "onCreate".to_string(),
-                    return_type: "V".to_string(),
-                    parameter_types: vec!["Landroid/os/Bundle;".to_string()],
-                },
-                DexInstructionFixup::TypeRef {
-                    offset_in_instructions: 4,
-                    type_descriptor: "Landroid/widget/TextView;".to_string(),
-                },
-                DexInstructionFixup::MethodRef {
-                    offset_in_instructions: 6,
-                    class_descriptor: "Landroid/widget/TextView;".to_string(),
                     name: "<init>".to_string(),
                     return_type: "V".to_string(),
-                    parameter_types: vec!["Landroid/content/Context;".to_string()],
-                },
-                DexInstructionFixup::StringRef {
-                    offset_in_instructions: 9,
-                    string: display_text.to_string(),
-                },
-                DexInstructionFixup::MethodRef {
-                    offset_in_instructions: 11,
-                    class_descriptor: "Landroid/widget/TextView;".to_string(),
-                    name: "setText".to_string(),
-                    return_type: "V".to_string(),
-                    parameter_types: vec!["Ljava/lang/CharSequence;".to_string()],
-                },
-                DexInstructionFixup::MethodRef {
-                    offset_in_instructions: 16,
-                    class_descriptor: "Landroid/widget/TextView;".to_string(),
-                    name: "setGravity".to_string(),
-                    return_type: "V".to_string(),
-                    parameter_types: vec!["I".to_string()],
-                },
-                DexInstructionFixup::MethodRef {
-                    offset_in_instructions: 21,
-                    class_descriptor: "Landroid/widget/TextView;".to_string(),
-                    name: "setTextSize".to_string(),
-                    return_type: "V".to_string(),
-                    parameter_types: vec!["F".to_string()],
-                },
-                DexInstructionFixup::MethodRef {
-                    offset_in_instructions: 24,
-                    class_descriptor: "Landroid/app/Activity;".to_string(),
-                    name: "setContentView".to_string(),
-                    return_type: "V".to_string(),
-                    parameter_types: vec!["Landroid/view/View;".to_string()],
+                    parameter_types: Vec::new(),
                 },
             ],
+        };
+
+        let mut instructions = Vec::new();
+        let mut fixups = Vec::new();
+
+        // 0: invoke-super {v3, v4}, Activity.onCreate(Bundle)
+        instructions.push(0x206F);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/app/Activity;".to_string(),
+            name: "onCreate".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/os/Bundle;".to_string()],
+        });
+        instructions.push(0x0043);
+
+        // 3: new-instance v0, TextView
+        instructions.push(0x0022);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::TypeRef {
+            offset_in_instructions: instructions.len() - 1,
+            type_descriptor: "Landroid/widget/TextView;".to_string(),
+        });
+
+        // 5: invoke-direct {v0, v3}, TextView.<init>(Context)
+        instructions.push(0x2070);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "<init>".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/content/Context;".to_string()],
+        });
+        instructions.push(0x0030);
+
+        // 8: const-string v1, displayText
+        instructions.push(0x011A);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::StringRef {
+            offset_in_instructions: instructions.len() - 1,
+            string: meta.display_text.clone(),
+        });
+
+        // 10: invoke-virtual {v0, v1}, TextView.setText(CharSequence)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "setText".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Ljava/lang/CharSequence;".to_string()],
+        });
+        instructions.push(0x0010);
+
+        // const/16 v1, gravity
+        instructions.push(0x0113);
+        instructions.push(meta.gravity as u16);
+
+        // invoke-virtual {v0, v1}, TextView.setGravity(int)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "setGravity".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["I".to_string()],
+        });
+        instructions.push(0x0010);
+
+        // const/high16 v1, 24.0f (0x41C00000)
+        instructions.push(0x0115);
+        instructions.push(0x41C0);
+
+        // invoke-virtual {v0, v1}, TextView.setTextSize(float)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/widget/TextView;".to_string(),
+            name: "setTextSize".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["F".to_string()],
+        });
+        instructions.push(0x0010);
+
+        // Optional background color
+        if let Some(bg) = meta.background_color {
+            instructions.push(0x0114);
+            instructions.push((bg & 0xFFFF) as u16);
+            instructions.push(((bg >> 16) & 0xFFFF) as u16);
+
+            instructions.push(0x206E);
+            instructions.push(0x0000);
+            fixups.push(DexInstructionFixup::MethodRef {
+                offset_in_instructions: instructions.len() - 1,
+                class_descriptor: "Landroid/view/View;".to_string(),
+                name: "setBackgroundColor".to_string(),
+                return_type: "V".to_string(),
+                parameter_types: vec!["I".to_string()],
+            });
+            instructions.push(0x0010);
+        }
+
+        // Optional text color
+        if let Some(tc) = meta.text_color {
+            instructions.push(0x0114);
+            instructions.push((tc & 0xFFFF) as u16);
+            instructions.push(((tc >> 16) & 0xFFFF) as u16);
+
+            instructions.push(0x206E);
+            instructions.push(0x0000);
+            fixups.push(DexInstructionFixup::MethodRef {
+                offset_in_instructions: instructions.len() - 1,
+                class_descriptor: "Landroid/widget/TextView;".to_string(),
+                name: "setTextColor".to_string(),
+                return_type: "V".to_string(),
+                parameter_types: vec!["I".to_string()],
+            });
+            instructions.push(0x0010);
+        }
+
+        // invoke-virtual {v3, v0}, Activity.setContentView(View)
+        instructions.push(0x206E);
+        instructions.push(0x0000);
+        fixups.push(DexInstructionFixup::MethodRef {
+            offset_in_instructions: instructions.len() - 1,
+            class_descriptor: "Landroid/app/Activity;".to_string(),
+            name: "setContentView".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/view/View;".to_string()],
+        });
+        instructions.push(0x0003);
+
+        // return-void
+        instructions.push(OP_RETURN_VOID as u16);
+
+        let on_create_method = DexMethod {
+            class_descriptor: main_activity_desc.clone(),
+            name: "onCreate".to_string(),
+            return_type: "V".to_string(),
+            parameter_types: vec!["Landroid/os/Bundle;".to_string()],
+            access_flags: 0x0001, // ACC_PUBLIC
+            is_direct: false,
+            registers_size: 5,
+            ins_size: 2,
+            outs_size: 2,
+            instructions,
+            instruction_fixups: fixups,
         };
 
         DexClass {
@@ -376,16 +599,21 @@ impl ClassToDexCompiler {
         // If no MainActivity was found in compiled sources, synthesize one with project UI text
         if !has_main_activity {
             let pkg = package_name.unwrap_or("com.example.app");
-            let text = match ui_text {
-                Some(t) => t.to_string(),
-                None => UiExtractor::extract_ui_text(
+            let meta = match ui_text {
+                Some(t) => crate::compiler::ui_extractor::UiMetadata {
+                    display_text: t.to_string(),
+                    background_color: None,
+                    text_color: None,
+                    gravity: 17,
+                },
+                None => UiExtractor::extract_ui_metadata(
                     project_root,
                     Some(classes_dir),
                     &parsed_classes,
                     pkg,
                 ),
             };
-            let main_activity = Self::build_main_activity(pkg, &text);
+            let main_activity = Self::build_main_activity_with_meta(pkg, &meta);
             builder.add_class(main_activity);
         }
 

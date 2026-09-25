@@ -75,17 +75,48 @@ pub fn execute_build(_args: &[String], cwd: &Path) -> (i32, Option<PathBuf>, Opt
             if let Some(ref kotlinc_bin) = kotlinc_report.path {
                 fs::create_dir_all(&classes_dir).ok();
                 let mut cmd = Command::new(kotlinc_bin);
+                let mut candidates = Vec::new();
+                if let Ok(jar_env) = std::env::var("KUI_JAR") {
+                    candidates.push(PathBuf::from(jar_env));
+                }
                 if let Some(kui_home) = crate::build::bridge::find_kui_home() {
-                    let precompiled_jar = kui_home.join(".kui").join("build").join("kui.jar");
-                    if precompiled_jar.is_file() {
-                        cmd.arg("-cp").arg(&precompiled_jar);
+                    candidates.push(kui_home.join(".kui").join("build").join("kui.jar"));
+                    candidates.push(kui_home.join("bin").join("kui.jar"));
+                }
+                candidates.push(PathBuf::from(r"D:\rust_kot\KUI4\.kui\build\kui.jar"));
+                candidates.push(PathBuf::from(r"D:\rust_kot\.kui\build\kui.jar"));
+
+                for candidate in candidates {
+                    if candidate.is_file() {
+                        cmd.arg("-cp").arg(&candidate);
+                        break;
                     }
                 }
                 for src in &kt_sources {
                     cmd.arg(src);
                 }
-                cmd.arg("-d").arg(&classes_dir);
-                let _ = cmd.status();
+                match cmd.status() {
+                    Ok(exit_status) => {
+                        if !exit_status.success() {
+                            eprintln!();
+                            eprintln!(
+                                "{} Kotlin compilation failed with exit code {:?}.",
+                                "✗ BUILD FAILED:".red().bold(),
+                                exit_status.code().unwrap_or(1)
+                            );
+                            return (1, None, None);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!();
+                        eprintln!(
+                            "{} Failed to execute kotlinc: {}",
+                            "✗ BUILD FAILED:".red().bold(),
+                            e
+                        );
+                        return (1, None, None);
+                    }
+                }
             }
         }
     }

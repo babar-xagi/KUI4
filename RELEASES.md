@@ -8,6 +8,7 @@ This document provides official release links, checksums, and changelogs for the
 
 | Release Tag | Installer File | Version | Core Highlights | Direct Download | SHA-256 Checksum |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`v0.04rs_kui`** | `0.04rs_kui.msi` | **0.4.0** | **Latest:** Enhanced declarative DSL (`screen` background colors, hex strings, alignment, padding), flexible `column` & `row` layouts with `Alignment.CenterHorizontally`, `Alignment.CenterVertically`, strict compilation error aborts in CLI, and dynamic UI metadata rendering. | 📥 [**Download 0.04rs_kui.msi (6.68 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.04rs_kui/0.04rs_kui.msi) | [`0724799F78652ABABF29AF913C028744F1EDB848FFF1BC90C1103DB9B4BF944B`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.04rs_kui/0.04rs_kui.msi.sha256) |
 | **`v0.03rs_kui`** | `0.03rs_kui.msi` | **0.3.0** | **Step 3:** Pure Rust DEX Compiler (`kui-dex`). JVM `.class` bytecode reader (`ClassFileReader`), Dalvik `.dex` emitter (`DexFileBuilder`), opcode translator (`ClassToDexCompiler`), MUTF-8 string pool, and Adler-32 / SHA-1 checksum calculation. Passes official Google `dexdump.exe` validation. | 📥 [**Download 0.03rs_kui.msi (6.65 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi) | [`E925960AAA6A431CF685E8D6DF25C86472CBFDDD071255B7D5F35F2D0B4236B6`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi.sha256) |
 | **`v0.02rs_kui`** | `0.02rs_kui.msi` | **0.2.2** | **Step 2:** Native Rust Packaging & Signing (`kui-packager`). Pure Rust `AxmlWriter`, 4-byte memory-aligned `ApkWriter` (zipalign verified), and pure RSA-2048 `ApkV2Signer` & `ApkV2Verifier`. Eliminates `kui.jar` dependency for packaging. | 📥 [**Download 0.02rs_kui.msi (6.57 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi) | [`75EF35EF6B2ECA82981883418FCC3A08B3F95CB3C1A028252EF61D38F1CC5F7D`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi.sha256) |
 | **`v0.01rs_kui`** | `0.01rs_kui.msi` | **0.2.1** | **Step 1:** High-performance native Rust CLI bootstrapper (`kui-cli`), project generator, doctor diagnostics, and device discovery. Windows MSI installer via WiX v5. | 📥 [**Download 0.01rs_kui.msi (6.55 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi) | [`46EDC2EA3914D747FB4B91DB89C39FE8B8A161F9DBC5B6F81B764CACA6137FA9`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi.sha256) |
@@ -16,7 +17,26 @@ This document provides official release links, checksums, and changelogs for the
 
 ## 📝 Release Notes
 
-### `v0.03rs_kui` (Latest) — Native DEX Bytecode Generation
+### `v0.04rs_kui` (Latest) — Screen Customization & Column/Row Layout Enhancements
+* **Components:** `platform/ui4`, `crates/kui-cli`, `crates/kui-dex`
+* **Features:**
+  * **Rich `screen` Customization:** Added full configuration parameters to `screen`:
+    * `background`: Accepts `Color` constants (e.g. `Color.White`, `Color.Black`, `Color.Red`), hex strings (`"#1E1E2E"`, `"#FFFFFF"`), or named strings (`"white"`, `"darkgray"`).
+    * `alignment`: Supports 2D and 1D alignments (`Alignment.TopCenter`, `Alignment.Center`, `Alignment.TopStart`, `Alignment.CenterHorizontally`).
+    * `padding`: Configurable with both `Float` and `Int` values.
+  * **Flexible `column` and `row` Layouts:**
+    * Full support for `Alignment.CenterHorizontally` and `Alignment.CenterVertically` aliases.
+    * Overloads supporting integer spacing gaps (e.g. `gap = 16`) without requiring float casting.
+    * Disambiguated method signatures eliminating Kotlin overload ambiguity.
+  * **Robust Build Diagnostics in `kui-cli`:**
+    * Native builder checks `kotlinc` status and aborts packaging immediately if compilation errors occur, preventing silent failures.
+    * Multi-path candidate search for `kui.jar` ensuring platform classes are always discovered.
+  * **Dynamic UI Rendering in `kui-dex`:**
+    * `UiExtractor` extracts background colors, text colors, and alignments from sources.
+    * Automatically applies contrast-optimized text color (`#111827` on light backgrounds, `#F9FAFB` on dark backgrounds).
+    * Dalvik bytecode generation for `setBackgroundColor` and `setTextColor` verified with Google `dexdump.exe`.
+
+---
 * **Crate:** `crates/kui-dex`
 * **Features:**
   * **Pure Rust JVM Class Parser (`ClassFileReader`):** Reads standard JVM `.class` binaries (`0xCAFEBABE`), parses 1-indexed constant pool entries (Utf8, Class, Methodref, Fieldref, InvokeDynamic, Long, Double), method `Code` attributes, locals, stacks, and exception tables.

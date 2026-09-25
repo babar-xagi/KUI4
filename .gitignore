@@ -23,6 +23,8 @@ replay_pid*
 
 # Kotlin persistent compiler data
 .kotlin/
+META-INF/
+*.kotlin_module
 
 # WiX Toolset artifacts
 .wix/

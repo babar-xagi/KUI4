@@ -13,6 +13,10 @@ enum class HorizontalAlign {
         Center -> (availableWidth - childWidth) / 2f
         End -> availableWidth - childWidth
     }
+
+    companion object {
+        val CenterHorizontally: HorizontalAlign = Center
+    }
 }
 
 /**
@@ -27,6 +31,10 @@ enum class VerticalAlign {
         Top -> 0f
         Center -> (availableHeight - childHeight) / 2f
         Bottom -> availableHeight - childHeight
+    }
+
+    companion object {
+        val CenterVertically: VerticalAlign = Center
     }
 }
 
@@ -55,6 +63,14 @@ data class Alignment(
         val BottomStart = Alignment(HorizontalAlign.Start, VerticalAlign.Bottom)
         val BottomCenter = Alignment(HorizontalAlign.Center, VerticalAlign.Bottom)
         val BottomEnd = Alignment(HorizontalAlign.End, VerticalAlign.Bottom)
+
+        // Directional and 1D Alignment Aliases (Jetpack Compose & KUI DSL compatibility)
+        val CenterHorizontally = Alignment(HorizontalAlign.Center, VerticalAlign.Center)
+        val CenterVertically = Alignment(HorizontalAlign.Center, VerticalAlign.Center)
+        val Start = Alignment(HorizontalAlign.Start, VerticalAlign.Center)
+        val End = Alignment(HorizontalAlign.End, VerticalAlign.Center)
+        val Top = Alignment(HorizontalAlign.Center, VerticalAlign.Top)
+        val Bottom = Alignment(HorizontalAlign.Center, VerticalAlign.Bottom)
 
         fun fromString(str: String): Alignment = when (str.lowercase()) {
             "start", "topstart", "top_start" -> TopStart

@@ -78,6 +78,33 @@ data class Color(val argb: Long) {
         }
 
         /**
+         * Parses a color string (e.g. "white", "black", "red", or hex "#FFFFFF").
+         */
+        fun parse(value: String): Color {
+            val clean = value.trim()
+            return when (clean.lowercase()) {
+                "white" -> White
+                "black" -> Black
+                "transparent" -> Transparent
+                "red" -> Red
+                "green" -> Green
+                "blue" -> Blue
+                "yellow" -> Yellow
+                "cyan" -> Cyan
+                "magenta" -> Magenta
+                "gray", "grey" -> Gray
+                "lightgray", "lightgrey" -> LightGray
+                "darkgray", "darkgrey" -> DarkGray
+                "purple" -> Purple
+                "indigo" -> Indigo
+                "orange" -> Orange
+                "teal" -> Teal
+                "pink" -> Pink
+                else -> parseHex(clean)
+            }
+        }
+
+        /**
          * Parses hex strings: #RGB, #RGBA, #RRGGBB, #AARRGGBB.
          */
         fun parseHex(hex: String): Color {

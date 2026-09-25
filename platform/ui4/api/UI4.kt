@@ -59,15 +59,19 @@ class UI4AppScope {
     val root: UiRoot = UiRoot()
 
     fun screen(
+        alignment: Alignment = Alignment.Center,
         modifier: Modifier = Modifier.fillMaxSize(),
         padding: Float = 0f,
         backgroundColor: Color? = null,
+        background: Color? = null,
+        color: Color? = null,
         content: UI4ContainerScope.() -> Unit
     ): UiRoot {
         var mod = modifier
+        val bg = backgroundColor ?: background ?: color
         if (padding > 0f) mod = mod.padding(padding)
-        if (backgroundColor != null) mod = mod.background(backgroundColor)
-        val screenBox = BoxNode(alignment = Alignment.Center).apply {
+        if (bg != null) mod = mod.background(bg)
+        val screenBox = BoxNode(alignment = alignment).apply {
             this.modifier = mod
             this.tag = "Screen"
         }
@@ -79,11 +83,48 @@ class UI4AppScope {
     }
 
     fun screen(
+        alignment: Alignment = Alignment.Center,
+        modifier: Modifier = Modifier.fillMaxSize(),
         padding: Int,
         backgroundColor: Color? = null,
-        modifier: Modifier = Modifier.fillMaxSize(),
+        background: Color? = null,
+        color: Color? = null,
         content: UI4ContainerScope.() -> Unit
-    ): UiRoot = screen(modifier, padding.toFloat(), backgroundColor, content)
+    ): UiRoot = screen(
+        alignment = alignment,
+        modifier = modifier,
+        padding = padding.toFloat(),
+        backgroundColor = backgroundColor ?: background ?: color,
+        content = content
+    )
+
+    fun screen(
+        background: String,
+        alignment: Alignment = Alignment.Center,
+        modifier: Modifier = Modifier.fillMaxSize(),
+        padding: Float = 0f,
+        content: UI4ContainerScope.() -> Unit
+    ): UiRoot = screen(
+        alignment = alignment,
+        modifier = modifier,
+        padding = padding,
+        backgroundColor = Color.parse(background),
+        content = content
+    )
+
+    fun screen(
+        background: String,
+        alignment: Alignment = Alignment.Center,
+        modifier: Modifier = Modifier.fillMaxSize(),
+        padding: Int,
+        content: UI4ContainerScope.() -> Unit
+    ): UiRoot = screen(
+        alignment = alignment,
+        modifier = modifier,
+        padding = padding.toFloat(),
+        backgroundColor = Color.parse(background),
+        content = content
+    )
 }
 
 /**
@@ -97,11 +138,13 @@ class UI4ContainerScope(val container: UiNode) {
         modifier: Modifier = Modifier,
         padding: Float = 0f,
         backgroundColor: Color? = null,
+        background: Color? = null,
         content: UI4ContainerScope.() -> Unit
     ): ColumnNode {
         var mod = modifier
+        val bg = backgroundColor ?: background
         if (padding > 0f) mod = mod.padding(padding)
-        if (backgroundColor != null) mod = mod.background(backgroundColor)
+        if (bg != null) mod = mod.background(bg)
         val col = ColumnNode(gap = gap, horizontalAlignment = alignment).apply {
             this.modifier = mod
         }
@@ -113,10 +156,61 @@ class UI4ContainerScope(val container: UiNode) {
 
     fun column(
         gap: Int,
-        alignment: String = "center",
+        alignment: Alignment = Alignment.CenterHorizontally,
         modifier: Modifier = Modifier,
         padding: Int = 0,
         backgroundColor: Color? = null,
+        background: Color? = null,
+        content: UI4ContainerScope.() -> Unit
+    ): ColumnNode = column(
+        gap = gap.toFloat(),
+        alignment = alignment.horizontal,
+        modifier = modifier,
+        padding = padding.toFloat(),
+        backgroundColor = backgroundColor ?: background,
+        content = content
+    )
+
+    fun column(
+        alignment: Alignment,
+        modifier: Modifier = Modifier,
+        padding: Float = 0f,
+        backgroundColor: Color? = null,
+        background: Color? = null,
+        content: UI4ContainerScope.() -> Unit
+    ): ColumnNode = column(
+        gap = 0f,
+        alignment = alignment.horizontal,
+        modifier = modifier,
+        padding = padding,
+        backgroundColor = backgroundColor ?: background,
+        content = content
+    )
+
+    fun column(
+        gap: Float,
+        alignment: Alignment,
+        modifier: Modifier = Modifier,
+        padding: Float = 0f,
+        backgroundColor: Color? = null,
+        background: Color? = null,
+        content: UI4ContainerScope.() -> Unit
+    ): ColumnNode = column(
+        gap = gap,
+        alignment = alignment.horizontal,
+        modifier = modifier,
+        padding = padding,
+        backgroundColor = backgroundColor ?: background,
+        content = content
+    )
+
+    fun column(
+        gap: Int,
+        alignment: String,
+        modifier: Modifier = Modifier,
+        padding: Int = 0,
+        backgroundColor: Color? = null,
+        background: Color? = null,
         content: UI4ContainerScope.() -> Unit
     ): ColumnNode {
         val hAlign = when (alignment.lowercase()) {
@@ -124,25 +218,15 @@ class UI4ContainerScope(val container: UiNode) {
             "end", "right" -> HorizontalAlign.End
             else -> HorizontalAlign.Center
         }
-        return column(gap.toFloat(), hAlign, modifier, padding.toFloat(), backgroundColor, content)
+        return column(
+            gap = gap.toFloat(),
+            alignment = hAlign,
+            modifier = modifier,
+            padding = padding.toFloat(),
+            backgroundColor = backgroundColor ?: background,
+            content = content
+        )
     }
-
-    fun column(
-        alignment: Alignment,
-        gap: Int = 0,
-        modifier: Modifier = Modifier,
-        padding: Int = 0,
-        backgroundColor: Color? = null,
-        content: UI4ContainerScope.() -> Unit
-    ): ColumnNode = column(gap.toFloat(), alignment.horizontal, modifier, padding.toFloat(), backgroundColor, content)
-
-    fun column(
-        padding: Int,
-        backgroundColor: Color? = null,
-        gap: Int = 0,
-        modifier: Modifier = Modifier,
-        content: UI4ContainerScope.() -> Unit
-    ): ColumnNode = column(gap.toFloat(), HorizontalAlign.Center, modifier, padding.toFloat(), backgroundColor, content)
 
     fun row(
         gap: Float = 0f,
@@ -150,11 +234,13 @@ class UI4ContainerScope(val container: UiNode) {
         modifier: Modifier = Modifier,
         padding: Float = 0f,
         backgroundColor: Color? = null,
+        background: Color? = null,
         content: UI4ContainerScope.() -> Unit
     ): RowNode {
         var mod = modifier
+        val bg = backgroundColor ?: background
         if (padding > 0f) mod = mod.padding(padding)
-        if (backgroundColor != null) mod = mod.background(backgroundColor)
+        if (bg != null) mod = mod.background(bg)
         val rowNode = RowNode(gap = gap, verticalAlignment = alignment).apply {
             this.modifier = mod
         }
@@ -166,10 +252,61 @@ class UI4ContainerScope(val container: UiNode) {
 
     fun row(
         gap: Int,
-        alignment: String = "center",
+        alignment: Alignment = Alignment.CenterVertically,
         modifier: Modifier = Modifier,
         padding: Int = 0,
         backgroundColor: Color? = null,
+        background: Color? = null,
+        content: UI4ContainerScope.() -> Unit
+    ): RowNode = row(
+        gap = gap.toFloat(),
+        alignment = alignment.vertical,
+        modifier = modifier,
+        padding = padding.toFloat(),
+        backgroundColor = backgroundColor ?: background,
+        content = content
+    )
+
+    fun row(
+        alignment: Alignment,
+        modifier: Modifier = Modifier,
+        padding: Float = 0f,
+        backgroundColor: Color? = null,
+        background: Color? = null,
+        content: UI4ContainerScope.() -> Unit
+    ): RowNode = row(
+        gap = 0f,
+        alignment = alignment.vertical,
+        modifier = modifier,
+        padding = padding,
+        backgroundColor = backgroundColor ?: background,
+        content = content
+    )
+
+    fun row(
+        gap: Float,
+        alignment: Alignment,
+        modifier: Modifier = Modifier,
+        padding: Float = 0f,
+        backgroundColor: Color? = null,
+        background: Color? = null,
+        content: UI4ContainerScope.() -> Unit
+    ): RowNode = row(
+        gap = gap,
+        alignment = alignment.vertical,
+        modifier = modifier,
+        padding = padding,
+        backgroundColor = backgroundColor ?: background,
+        content = content
+    )
+
+    fun row(
+        gap: Int,
+        alignment: String,
+        modifier: Modifier = Modifier,
+        padding: Int = 0,
+        backgroundColor: Color? = null,
+        background: Color? = null,
         content: UI4ContainerScope.() -> Unit
     ): RowNode {
         val vAlign = when (alignment.lowercase()) {
@@ -177,25 +314,15 @@ class UI4ContainerScope(val container: UiNode) {
             "bottom" -> VerticalAlign.Bottom
             else -> VerticalAlign.Center
         }
-        return row(gap.toFloat(), vAlign, modifier, padding.toFloat(), backgroundColor, content)
+        return row(
+            gap = gap.toFloat(),
+            alignment = vAlign,
+            modifier = modifier,
+            padding = padding.toFloat(),
+            backgroundColor = backgroundColor ?: background,
+            content = content
+        )
     }
-
-    fun row(
-        alignment: Alignment,
-        gap: Int = 0,
-        modifier: Modifier = Modifier,
-        padding: Int = 0,
-        backgroundColor: Color? = null,
-        content: UI4ContainerScope.() -> Unit
-    ): RowNode = row(gap.toFloat(), alignment.vertical, modifier, padding.toFloat(), backgroundColor, content)
-
-    fun row(
-        padding: Int,
-        backgroundColor: Color? = null,
-        gap: Int = 0,
-        modifier: Modifier = Modifier,
-        content: UI4ContainerScope.() -> Unit
-    ): RowNode = row(gap.toFloat(), VerticalAlign.Center, modifier, padding.toFloat(), backgroundColor, content)
 
     fun box(
         alignment: Alignment = Alignment.Center,

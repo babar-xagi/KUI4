@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## 🎨 [0.4.0] - 2026-09-24 (`v0.04rs_kui`)
+
+### 🌟 Screen Customization & Layout Improvements
+* **Declarative DSL (`platform/ui4`):**
+  * **Screen Customization:**
+    * Added `background` parameter accepting `Color` constants (`Color.White`, `Color.Black`, `Color.Red`, etc.), named strings (`"white"`, `"darkgray"`), or hex color codes (`"#FFFFFF"`, `"#1E1E2E"`).
+    * Added `alignment` parameter supporting both 2D and 1D alignments (`Alignment.TopCenter`, `Alignment.Center`, `Alignment.TopStart`, `Alignment.CenterHorizontally`).
+    * Added `padding` parameter accepting both `Int` and `Float` numbers.
+  * **Column & Row Layout Improvements:**
+    * Added `Alignment.CenterHorizontally` and `Alignment.CenterVertically` aliases in `Alignment` companion object and enums.
+    * Added support for `Alignment.Start`, `Alignment.End`, `Alignment.Top`, `Alignment.Bottom`.
+    * Added overloaded functions allowing integer spacing gaps (e.g. `column(gap = 16, alignment = Alignment.CenterHorizontally)`) without type mismatches.
+    * Disambiguated method signatures eliminating Kotlin overload ambiguity errors.
+* **Native Toolchain & CLI (`crates/kui-cli`):**
+  * **Strict Compilation Diagnostics:** `kui build` and `kui run` now strictly inspect the exit status of `kotlinc`. If Kotlin source compilation fails, the build halts immediately with error code 1 instead of silently continuing with obsolete artifacts.
+  * **Multi-Path JAR Discovery:** Searches multiple candidate locations for `kui.jar` ensuring platform classes are consistently resolved.
+* **Dynamic Bytecode Synthesis (`crates/kui-dex`):**
+  * **UI Metadata Extraction:** `UiExtractor` extracts background colors, text colors, and alignments from user code.
+  * **Contrast-Aware Text Rendering:** Automatically computes background luminance and applies high-contrast text color (`#111827` on light backgrounds, `#F9FAFB` on dark backgrounds).
+  * **Dalvik Opcodes:** Dynamically emits `View.setBackgroundColor(int)`, `TextView.setTextColor(int)`, and gravity flags into `MainActivity.onCreate`.
+  * Verified with Google Android SDK `dexdump.exe` inspection.
+* **Release Artifacts:**
+  * Produced `0.04rs_kui.msi` (6.68 MB, SHA-256: `0724799F78652ABABF29AF913C028744F1EDB848FFF1BC90C1103DB9B4BF944B`).
+
+---
+
 ## 🚀 [0.3.0] - 2026-09-24 (`v0.03rs_kui`)
 
 ### ⚡ Step 3: Pure Rust Dalvik Executable (DEX) Compiler (`kui-dex`)

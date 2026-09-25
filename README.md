@@ -48,7 +48,8 @@ For Windows users who want an effortless one-click setup with automatic `PATH` c
 
 | Version | Package | Status | Highlights | Download Link |
 | :--- | :--- | :--- | :--- | :--- |
-| **v0.03rs_kui** | `0.03rs_kui.msi` | **Latest** | Native `kui-dex` Dalvik compiler, MUTF-8 string pool, opcode translator, Google `dexdump` verified | 📥 [**Download 0.03rs_kui.msi (6.65 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi) |
+| **v0.04rs_kui** | `0.04rs_kui.msi` | **Latest** | Screen customization (background, hex color, alignment), flexible column & row layouts, strict compiler diagnostics | 📥 [**Download 0.04rs_kui.msi (6.68 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.04rs_kui/0.04rs_kui.msi) |
+| **v0.03rs_kui** | `0.03rs_kui.msi` | Previous | Native `kui-dex` Dalvik compiler, MUTF-8 string pool, opcode translator, Google `dexdump` verified | 📥 [**Download 0.03rs_kui.msi (6.65 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi) |
 | **v0.02rs_kui** | `0.02rs_kui.msi` | Previous | Native `kui-packager`, pure Rust AXML, 4-byte zipalign, APK v2 signing | 📥 [**Download 0.02rs_kui.msi (6.57 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi) |
 | **v0.01rs_kui** | `0.01rs_kui.msi` | Previous | Native CLI bootstrapper (`kui-cli`), project generator, doctor diagnostics | 📥 [**Download 0.01rs_kui.msi (6.55 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi) |
 
