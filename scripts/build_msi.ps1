@@ -50,18 +50,44 @@ if (-not (Test-Path $KuiExe)) {
 }
 Write-Host "[1/5] Native kui.exe verified: $((Get-Item $KuiExe).Length) bytes" -ForegroundColor Green
 
-# Ensure kui.jar exists (precompiled platform jar)
+# Optional: ensure kui.jar exists (precompiled platform jar)
 $KuiJar = Join-Path $ProjectRoot ".kui\build\kui.jar"
 if (-not (Test-Path $KuiJar)) {
-    Write-Host "Compiling kui.jar platform binary..." -ForegroundColor Yellow
-    & $KuiExe doctor
+    Write-Host "Attempting to compile platform kui.jar with kotlinc..." -ForegroundColor Yellow
+    $KotlincCmd = $null
+    if (Get-Command kotlinc.bat -ErrorAction SilentlyContinue) {
+        $KotlincCmd = (Get-Command kotlinc.bat).Source
+    } elseif (Get-Command kotlinc -ErrorAction SilentlyContinue) {
+        $KotlincCmd = (Get-Command kotlinc).Source
+    } elseif (Test-Path "C:\tools\kotlinc\bin\kotlinc.bat") {
+        $KotlincCmd = "C:\tools\kotlinc\bin\kotlinc.bat"
+    } elseif (Test-Path "$env:LOCALAPPDATA\Programs\IntelliJ IDEA\plugins\Kotlin\kotlinc\bin\kotlinc.bat") {
+        $KotlincCmd = "$env:LOCALAPPDATA\Programs\IntelliJ IDEA\plugins\Kotlin\kotlinc\bin\kotlinc.bat"
+    }
+
+    if ($KotlincCmd) {
+        $PlatformDir = Join-Path $ProjectRoot "platform"
+        if (Test-Path $PlatformDir) {
+            $Sources = Get-ChildItem -Path $PlatformDir -Recurse -Filter "*.kt" | Select-Object -ExpandProperty FullName
+            if ($Sources) {
+                $BuildDir = Join-Path $ProjectRoot ".kui\build"
+                New-Item -ItemType Directory -Path $BuildDir -Force | Out-Null
+                $SourcesFile = Join-Path $env:TEMP "kui_sources_msi_$PID.txt"
+                $Sources | Out-File -Encoding ascii $SourcesFile
+                Write-Host "Compiling $($Sources.Count) Kotlin sources into kui.jar using $KotlincCmd..." -ForegroundColor Yellow
+                & $KotlincCmd "@$SourcesFile" -include-runtime -d $KuiJar
+                Remove-Item $SourcesFile -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
 }
-if (-not (Test-Path $KuiJar)) {
-    Write-Error "Failed to locate precompiled kui.jar at $KuiJar"
-    exit 1
+
+if (Test-Path $KuiJar) {
+    $KuiJarSize = (Get-Item $KuiJar).Length
+    Write-Host "[1/5] Precompiled kui.jar verified: $KuiJarSize bytes" -ForegroundColor Green
+} else {
+    Write-Host "[1/5] Notice: kui.jar not present. Native Rust packager (kui-packager) operates independently." -ForegroundColor Yellow
 }
-$KuiJarSize = (Get-Item $KuiJar).Length
-Write-Host "[1/5] Precompiled kui.jar verified: $KuiJarSize bytes" -ForegroundColor Green
 
 # 3. Setup Dist and Staging Directory
 $DistPath = Join-Path $ProjectRoot $OutputDir
@@ -102,10 +128,12 @@ exit 1
 '@
 $StagingPs1 | Out-File -Encoding utf8 (Join-Path $StagingPath "kui.ps1")
 
-# Copy precompiled platform jar into .kui/build
-$StagingKuiBuild = Join-Path $StagingPath ".kui\build"
-New-Item -ItemType Directory -Path $StagingKuiBuild -Force | Out-Null
-Copy-Item $KuiJar -Destination $StagingKuiBuild -Force
+# Copy precompiled platform jar into .kui/build (if present)
+if (Test-Path $KuiJar) {
+    $StagingKuiBuild = Join-Path $StagingPath ".kui\build"
+    New-Item -ItemType Directory -Path $StagingKuiBuild -Force | Out-Null
+    Copy-Item $KuiJar -Destination $StagingKuiBuild -Force
+}
 
 # Copy platform source tree
 Copy-Item (Join-Path $ProjectRoot "platform") -Destination $StagingPath -Recurse -Force
