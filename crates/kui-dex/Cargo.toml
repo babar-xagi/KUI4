@@ -1,0 +1,12 @@
+[package]
+name = "kui-dex"
+version = "0.3.0"
+edition = "2021"
+authors = ["babar-xagi <babar.xagi@gmail.com>"]
+description = "Pure Rust Dalvik Executable (DEX) generator and JVM classfile compiler"
+
+[dependencies]
+sha1 = "0.10"
+
+[dev-dependencies]
+tempfile = "3.10"

@@ -1,6 +1,6 @@
 [package]
 name = "kui-cli"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["babar-xagi <babar.xagi@gmail.com>"]
 description = "High-performance native CLI bootstrapper and orchestrator for KUI & UI4"

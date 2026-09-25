@@ -12,8 +12,8 @@ use kui_cli::build::clean::execute_clean;
 
 #[test]
 fn test_version_constants() {
-    assert_eq!(VERSION_STRING, "0.1.0");
-    assert_eq!(DISPLAY_NAME, "kui version 0.1.0");
+    assert_eq!(VERSION_STRING, "0.3.0");
+    assert_eq!(DISPLAY_NAME, "kui version 0.3.0");
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn test_parser_flags_and_args() {
 #[test]
 fn test_help_formatting() {
     let general = Help::general_help();
-    assert!(general.contains("kui version 0.1.0"));
+    assert!(general.contains("kui version 0.3.0"));
     assert!(general.contains("Usage:"));
     assert!(general.contains("new <name>"));
     assert!(general.contains("doctor"));

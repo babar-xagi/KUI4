@@ -8,6 +8,7 @@ This document provides official release links, checksums, and changelogs for the
 
 | Release Tag | Installer File | Version | Core Highlights | Direct Download | SHA-256 Checksum |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`v0.03rs_kui`** | `0.03rs_kui.msi` | **0.3.0** | **Step 3:** Pure Rust DEX Compiler (`kui-dex`). JVM `.class` bytecode reader (`ClassFileReader`), Dalvik `.dex` emitter (`DexFileBuilder`), opcode translator (`ClassToDexCompiler`), MUTF-8 string pool, and Adler-32 / SHA-1 checksum calculation. Passes official Google `dexdump.exe` validation. | 📥 [**Download 0.03rs_kui.msi (6.65 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi) | [`E925960AAA6A431CF685E8D6DF25C86472CBFDDD071255B7D5F35F2D0B4236B6`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi.sha256) |
 | **`v0.02rs_kui`** | `0.02rs_kui.msi` | **0.2.2** | **Step 2:** Native Rust Packaging & Signing (`kui-packager`). Pure Rust `AxmlWriter`, 4-byte memory-aligned `ApkWriter` (zipalign verified), and pure RSA-2048 `ApkV2Signer` & `ApkV2Verifier`. Eliminates `kui.jar` dependency for packaging. | 📥 [**Download 0.02rs_kui.msi (6.57 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi) | [`75EF35EF6B2ECA82981883418FCC3A08B3F95CB3C1A028252EF61D38F1CC5F7D`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi.sha256) |
 | **`v0.01rs_kui`** | `0.01rs_kui.msi` | **0.2.1** | **Step 1:** High-performance native Rust CLI bootstrapper (`kui-cli`), project generator, doctor diagnostics, and device discovery. Windows MSI installer via WiX v5. | 📥 [**Download 0.01rs_kui.msi (6.55 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi) | [`46EDC2EA3914D747FB4B91DB89C39FE8B8A161F9DBC5B6F81B764CACA6137FA9`](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi.sha256) |
 
@@ -15,7 +16,32 @@ This document provides official release links, checksums, and changelogs for the
 
 ## 📝 Release Notes
 
-### `v0.02rs_kui` (Latest) — Native Packaging & Signing
+### `v0.03rs_kui` (Latest) — Native DEX Bytecode Generation
+* **Crate:** `crates/kui-dex`
+* **Features:**
+  * **Pure Rust JVM Class Parser (`ClassFileReader`):** Reads standard JVM `.class` binaries (`0xCAFEBABE`), parses 1-indexed constant pool entries (Utf8, Class, Methodref, Fieldref, InvokeDynamic, Long, Double), method `Code` attributes, locals, stacks, and exception tables.
+  * **Dalvik DEX Builder (`DexFileBuilder`):**
+    * Encodes string items in Modified UTF-8 (`encode_mutf8`) with UTF-16 surrogate pairs and null characters (`0xC0 0x80`).
+    * Full ULEB128 and SLEB128 variable-length integer encoding.
+    * Computes string_ids, type_ids, proto_ids, field_ids, method_ids, class_defs, and data section with strict sorting per DEX specification.
+    * Applies symbolic instruction fixups (`MethodRef`, `TypeRef`, `StringRef`) resolving method indexes and type indexes into 16-bit code units.
+    * Performs 4-byte memory alignment for code items and type lists.
+    * Emits class data items with differential ULEB128 encoding (`diff` offsets) for fields and methods.
+    * Computes RFC 1950 Adler-32 checksum (bytes 12..end) and SHA-1 cryptographic digest (bytes 32..end).
+  * **Bytecode Compiler (`ClassToDexCompiler`):**
+    * Maps JVM type and method descriptors to Dalvik signatures (`Lpackage/Class;`, `(Lparams;)V`).
+    * Automatically translates constructors with required Dalvik `invoke-direct {this} SuperClass.<init>()` supercalls.
+    * Translates JVM return opcodes (`0xB1`, `0xAC`–`0xAF`, `0xB0`) into Dalvik opcodes (`return-void`, `return`, `return-object`).
+    * Synthesizes responsive `MainActivity` inheriting `android.app.Activity` with live UI text dynamically extracted from project sources (`src/main.kt`) and constant pools.
+  * **Official Google Toolchain Verification:**
+    * Validated against Google Android SDK `dexdump.exe -c` (Checksum verified).
+    * Validated against Google Android SDK `dexdump.exe -d` (Disassembly and Dalvik opcode validation).
+  * **End-to-End Pipeline Integration:**
+    * Integrated into `kui-packager::pipeline` and `kui-cli`, converting compiled `.class` files into `classes.dex` and bundling them into aligned, signed APKs with zero external tooling.
+
+---
+
+### `v0.02rs_kui` — Native Packaging & Signing
 * **Crate:** `crates/kui-packager`
 * **Features:**
   * **Binary Android XML Encoder (`AxmlWriter` & `ManifestGenerator`):** Pure binary XML serialization of `AndroidManifest.xml` (`RES_XML_TYPE 0x0003`, UTF-16 string pool `0x0001`, system resource map `0x0180`, standard Android resource attributes).

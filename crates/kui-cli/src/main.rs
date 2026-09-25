@@ -7,6 +7,9 @@ use kui_cli::doctor;
 use kui_cli::project;
 
 fn main() {
+    #[cfg(windows)]
+    let _ = colored::control::set_virtual_terminal(true);
+
     let raw_args: Vec<String> = env::args().skip(1).collect();
 
     let exit_code = match CommandParser::parse(&raw_args) {

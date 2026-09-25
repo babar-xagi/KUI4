@@ -142,7 +142,7 @@ impl PackagingPipeline {
             &options.app_label,
         );
 
-        // 2. Resolve DEX bytecode
+        // 2. Resolve DEX bytecode via native kui-dex compiler
         let dex_bytes: Vec<u8> = if let Some(bytes) = custom_dex {
             bytes.to_vec()
         } else {
@@ -150,14 +150,35 @@ impl PackagingPipeline {
             let candidate2 = project_root.join("build").join("classes.dex");
             let candidate3 = project_root.join("classes.dex");
 
-            if candidate1.is_file() {
-                fs::read(&candidate1).unwrap_or_else(|_| build_minimal_dex())
-            } else if candidate2.is_file() {
-                fs::read(&candidate2).unwrap_or_else(|_| build_minimal_dex())
-            } else if candidate3.is_file() {
-                fs::read(&candidate3).unwrap_or_else(|_| build_minimal_dex())
+            let classes_dir1 = project_root.join("build").join("classes");
+            let classes_dir2 = project_root.join(".kui").join("build").join("classes");
+            let classes_dir = if classes_dir1.is_dir() {
+                classes_dir1
+            } else if classes_dir2.is_dir() {
+                classes_dir2
             } else {
-                build_minimal_dex()
+                classes_dir1
+            };
+
+            match kui_dex::compiler::ClassToDexCompiler::compile_directory(
+                &classes_dir,
+                Some(&candidate1),
+                Some(&options.package_name),
+                Some(project_root),
+                None,
+            ) {
+                Ok(bytes) => bytes,
+                Err(_) => {
+                    if candidate1.is_file() {
+                        fs::read(&candidate1).unwrap_or_else(|_| build_minimal_dex())
+                    } else if candidate2.is_file() {
+                        fs::read(&candidate2).unwrap_or_else(|_| build_minimal_dex())
+                    } else if candidate3.is_file() {
+                        fs::read(&candidate3).unwrap_or_else(|_| build_minimal_dex())
+                    } else {
+                        build_minimal_dex()
+                    }
+                }
             }
         };
 

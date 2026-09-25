@@ -42,8 +42,8 @@ jobs:
       - name: Run Tests
         run: cargo test --workspace
 
-      - name: Build 0.02rs_kui MSI Installer
-        run: pwsh -File scripts/build_msi.ps1 -Version 0.2.2 -MsiName 0.02rs_kui
+      - name: Build 0.03rs_kui MSI Installer
+        run: pwsh -File scripts/build_msi.ps1 -Version 0.3.0 -MsiName 0.03rs_kui
 
       - name: Create GitHub Release with Assets
         uses: softprops/action-gh-release@v2
@@ -54,7 +54,11 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            dist/0.02rs_kui.msi
-            dist/0.02rs_kui.msi.sha256
+            dist/0.03rs_kui.msi
+            dist/0.03rs_kui.msi.sha256
+            releases/v0.03rs_kui/0.03rs_kui.msi
+            releases/v0.03rs_kui/0.03rs_kui.msi.sha256
+            releases/v0.02rs_kui/0.02rs_kui.msi
+            releases/v0.02rs_kui/0.02rs_kui.msi.sha256
             releases/v0.01rs_kui/0.01rs_kui.msi
             releases/v0.01rs_kui/0.01rs_kui.msi.sha256

@@ -1,7 +1,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="KUI Platform (0.02rs_kui)"
+  <Package Name="KUI Platform (0.03rs_kui)"
            Manufacturer="KUI Project"
-           Version="0.2.2"
+           Version="0.3.0"
            UpgradeCode="D74A1B29-4F58-4C82-962E-73E8A42598D1"
            Scope="perMachine">
 
@@ -56,7 +56,7 @@
     </ComponentGroup>
 
     <!-- Main Feature Hierarchy -->
-    <Feature Id="MainFeature" Title="KUI Platform (0.02rs_kui)" Level="1">
+    <Feature Id="MainFeature" Title="KUI Platform (0.03rs_kui)" Level="1">
       <ComponentGroupRef Id="ProductFilesGroup" />
       <ComponentGroupRef Id="ShortcutComponents" />
     </Feature>

@@ -2,5 +2,6 @@
 members = [
     "crates/kui-cli",
     "crates/kui-packager",
+    "crates/kui-dex",
 ]
 resolver = "2"
