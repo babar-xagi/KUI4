@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "crates/kui-cli",
+    "crates/kui-packager",
 ]
 resolver = "2"

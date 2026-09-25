@@ -1,7 +1,7 @@
-﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="KUI Platform (0.01rs_kui)"
            Manufacturer="KUI Project"
-           Version="0.2.1"
+           Version="0.2.2"
            UpgradeCode="D74A1B29-4F58-4C82-962E-73E8A42598D1"
            Scope="perMachine">
 

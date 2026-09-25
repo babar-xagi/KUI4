@@ -55,12 +55,32 @@ fn main() {
                     let cwd = env::current_dir().unwrap_or_else(|_| ".".into());
                     build::execute_clean(&cwd)
                 }
-                // Delegated build / run / test / bench / install / launch commands
-                Command::Build
-                | Command::Run
-                | Command::Test
-                | Command::Install
-                | Command::Launch
+                Command::Build => {
+                    let cwd = env::current_dir().unwrap_or_else(|_| ".".into());
+                    if flags.contains_key("jvm") {
+                        build::bridge_to_jvm(&raw_args)
+                    } else {
+                        build::execute_build(&args, &cwd).0
+                    }
+                }
+                Command::Install => {
+                    let cwd = env::current_dir().unwrap_or_else(|_| ".".into());
+                    if flags.contains_key("jvm") {
+                        build::bridge_to_jvm(&raw_args)
+                    } else {
+                        build::execute_install(&args, &cwd)
+                    }
+                }
+                Command::Run | Command::Launch => {
+                    let cwd = env::current_dir().unwrap_or_else(|_| ".".into());
+                    if flags.contains_key("jvm") {
+                        build::bridge_to_jvm(&raw_args)
+                    } else {
+                        build::execute_run(&args, &cwd)
+                    }
+                }
+                // Delegated JVM commands for tests / bench / profile
+                Command::Test
                 | Command::Bench
                 | Command::Profile
                 | Command::UiTree => {

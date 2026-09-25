@@ -300,3 +300,50 @@ fn test_environment_discovery() {
     assert!(kotlin.is_valid, "Kotlin compiler should be discovered: {}", kotlin.message);
     assert!(kotlin.path.is_some());
 }
+
+#[test]
+fn test_native_build_end_to_end() {
+    let temp = tempdir().unwrap();
+    let root = temp.path();
+
+    let target_dir = root.join("nativeapp");
+    let opt = NewProjectOptions {
+        name: "nativeapp".to_string(),
+        target_dir,
+        application_id: Some("com.example.nativeapp".to_string()),
+        version: "0.1.0".to_string(),
+        version_code: 1,
+        min_sdk: 24,
+        target_sdk: 36,
+        minimal: false,
+    };
+
+    let proj_dir = generate_project(&opt).unwrap();
+    assert!(proj_dir.join("kui.toml").is_file());
+
+    let (code, apk_path, pkg_name) = kui_cli::build::native::execute_build(&[], &proj_dir);
+    assert_eq!(code, 0, "Native build must succeed with exit code 0");
+    assert_eq!(pkg_name, Some("com.example.nativeapp".to_string()));
+    assert!(apk_path.is_some(), "APK path must be returned");
+
+    let apk = apk_path.unwrap();
+    assert!(apk.is_file(), "APK output file must exist on disk");
+
+    let apk_bytes = fs::read(&apk).unwrap();
+    assert!(apk_bytes.len() > 100);
+
+    // Verify 4-byte alignment
+    assert!(
+        kui_packager::apk::ApkWriter::verify_alignment(&apk_bytes),
+        "Native generated APK must satisfy 4-byte zipalign"
+    );
+
+    // Verify APK Signature Scheme v2
+    let verify_res = kui_packager::signing::ApkV2Verifier::verify(&apk_bytes);
+    assert!(
+        verify_res.is_ok(),
+        "Native generated APK must pass APK v2 signature verification: {:?}",
+        verify_res.err()
+    );
+}
+
