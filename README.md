@@ -44,12 +44,12 @@ You can install KUI either by cloning the repository or downloading the release 
 
 ### Option 1: 🪟 Windows One-Click Installer (.msi) — Recommended for Windows
 
-For Windows users who want an effortless one-click setup with automatic `PATH` configuration:
+For Windows users who want an effortless one-click setup with automatic `PATH` configuration and ultra-fast native Rust CLI:
 
-1. 📥 **[Download kui-v0.1.0-windows-x64.msi (5.76 MB)](https://github.com/babar-xagi/KUI4/raw/main/dist/kui-v0.1.0-windows-x64.msi)**
+1. 📥 **[Download 0.01rs_kui.msi (6.39 MB)](https://github.com/babar-xagi/KUI4/raw/main/dist/0.01rs_kui.msi)**
 2. Double-click the `.msi` to run the setup wizard.
 3. The installer automatically:
-   - Installs KUI to `C:\Program Files\KUI`
+   - Installs KUI to `C:\Program Files\KUI` with the native Rust `kui.exe` CLI
    - Configures the system `PATH` environment variable automatically
    - Adds a "KUI Command Prompt" shortcut to your Start Menu
 4. Open any terminal and run `kui doctor`!

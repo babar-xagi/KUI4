@@ -1,11 +1,11 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="KUI Platform (Kotlin UI)"
+  <Package Name="KUI Platform (0.01rs_kui)"
            Manufacturer="KUI Project"
-           Version="0.1.0"
+           Version="0.2.1"
            UpgradeCode="D74A1B29-4F58-4C82-962E-73E8A42598D1"
            Scope="perMachine">
 
-    <MajorUpgrade DowngradeErrorMessage="A newer version of KUI Platform is already installed." />
+    <MajorUpgrade AllowDowngrades="yes" />
 
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
@@ -43,7 +43,7 @@
                   Name="KUI Command Prompt"
                   Description="Open a command prompt ready for KUI"
                   Target="[SystemFolder]cmd.exe"
-                  Arguments="/k echo Welcome to KUI (Kotlin UI) Platform! &amp; kui doctor"
+                  Arguments="/k echo Welcome to KUI (Rust + Kotlin) Platform! &amp; kui doctor"
                   WorkingDirectory="PersonalFolder" />
         <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
         <RegistryValue Root="HKCU"
@@ -56,7 +56,7 @@
     </ComponentGroup>
 
     <!-- Main Feature Hierarchy -->
-    <Feature Id="MainFeature" Title="KUI Platform and Toolchain" Level="1">
+    <Feature Id="MainFeature" Title="KUI Platform (0.01rs_kui)" Level="1">
       <ComponentGroupRef Id="ProductFilesGroup" />
       <ComponentGroupRef Id="ShortcutComponents" />
     </Feature>

@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "crates/kui-cli",
+]
+resolver = "2"

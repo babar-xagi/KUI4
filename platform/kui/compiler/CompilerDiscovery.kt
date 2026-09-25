@@ -49,6 +49,9 @@ object CompilerDiscovery {
             candidates.add("C:\\tools\\kotlinc\\bin\\kotlinc.bat")
             candidates.add("C:\\Program Files\\kotlinc\\bin\\kotlinc.bat")
             candidates.add("C:\\kotlinc\\bin\\kotlinc.bat")
+            System.getenv("LOCALAPPDATA")?.let {
+                candidates.add(File(it, "Programs/IntelliJ IDEA/plugins/Kotlin/kotlinc/bin/kotlinc.bat").path)
+            }
         } else {
             candidates.add("/usr/local/bin/kotlinc")
             candidates.add("/usr/bin/kotlinc")

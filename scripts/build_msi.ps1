@@ -1,32 +1,60 @@
 # ====================================================================
-# KUI Platform - Pure Kotlin MSI Windows Installer Builder (WiX v4+)
+# KUI Platform - MSI Windows Installer Builder (WiX v4/v5)
+# Includes Native Rust CLI (kui.exe) + Pure Kotlin Engine (kui.jar)
 # ====================================================================
 
 param(
-    [string]$Version = "0.1.0",
-    [string]$OutputDir = "dist"
+    [string]$Version = "0.2.0",
+    [string]$OutputDir = "dist",
+    [string]$MsiName = "0.01rs_kui"
 )
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Resolve-Path (Join-Path $ScriptDir "..")
+$WorkspaceRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
 
 Write-Host "=== KUI MSI Installer Builder ===" -ForegroundColor Cyan
-Write-Host "Project Root: $ProjectRoot"
-Write-Host "KUI Version: $Version"
+Write-Host "Project Root:   $ProjectRoot"
+Write-Host "Workspace Root: $WorkspaceRoot"
+Write-Host "KUI Version:    $Version"
+Write-Host "MSI File Name:  $MsiName.msi"
 
 # 1. Verify wix CLI
+if (Test-Path "$env:USERPROFILE\.dotnet\tools\wix.exe") {
+    $env:PATH = "$env:USERPROFILE\.dotnet\tools;" + $env:PATH
+}
+
 $WixCmd = Get-Command wix -ErrorAction SilentlyContinue
 if (-not $WixCmd) {
-    Write-Error "WiX Toolset CLI ('wix') was not found on PATH. Please install with: dotnet tool install --global wix"
+    Write-Error "WiX Toolset CLI ('wix') was not found on PATH. Please install with: dotnet tool install --global wix --version 5.0.2"
     exit 1
 }
 
-# 2. Ensure kui.jar exists (precompiled platform jar)
+# 2. Ensure native Rust kui.exe binary exists
+Write-Host "[1/5] Verifying native Rust CLI (kui.exe)..." -ForegroundColor Yellow
+$KuiExe = Join-Path $ProjectRoot "bin\kui.exe"
+if (-not (Test-Path $KuiExe)) {
+    $KuiExe = Join-Path $WorkspaceRoot "target\release\kui.exe"
+}
+if (-not (Test-Path $KuiExe)) {
+    Write-Host "Building release kui.exe using cargo..." -ForegroundColor Yellow
+    Push-Location $WorkspaceRoot
+    cargo build --release --package kui-cli
+    Pop-Location
+    $KuiExe = Join-Path $WorkspaceRoot "target\release\kui.exe"
+}
+if (-not (Test-Path $KuiExe)) {
+    Write-Error "Failed to locate native kui.exe at $KuiExe"
+    exit 1
+}
+Write-Host "[1/5] Native kui.exe verified: $((Get-Item $KuiExe).Length) bytes" -ForegroundColor Green
+
+# Ensure kui.jar exists (precompiled platform jar)
 $KuiJar = Join-Path $ProjectRoot ".kui\build\kui.jar"
 if (-not (Test-Path $KuiJar)) {
-    Write-Host "[1/5] Compiling kui.jar platform binary..." -ForegroundColor Yellow
-    & (Join-Path $ProjectRoot "kui.bat") doctor
+    Write-Host "Compiling kui.jar platform binary..." -ForegroundColor Yellow
+    & $KuiExe doctor
 }
 if (-not (Test-Path $KuiJar)) {
     Write-Error "Failed to locate precompiled kui.jar at $KuiJar"
@@ -48,10 +76,31 @@ Write-Host "[2/5] Staging distribution payload..." -ForegroundColor Yellow
 
 # Copy root entry files
 Copy-Item (Join-Path $ProjectRoot "kui.bat") -Destination $StagingPath -Force
-Copy-Item (Join-Path $ProjectRoot "kui.ps1") -Destination $StagingPath -Force
 Copy-Item (Join-Path $ProjectRoot "kui.toml") -Destination $StagingPath -Force
 Copy-Item (Join-Path $ProjectRoot "LICENSE") -Destination $StagingPath -Force
 Copy-Item (Join-Path $ProjectRoot "README.md") -Destination $StagingPath -Force
+
+# Stage native Rust kui.exe at root and bin\
+Copy-Item $KuiExe -Destination $StagingPath -Force
+$StagingBin = Join-Path $StagingPath "bin"
+New-Item -ItemType Directory -Path $StagingBin -Force | Out-Null
+Copy-Item $KuiExe -Destination $StagingBin -Force
+
+# Stage a clean, resilient kui.ps1 that directly delegates to kui.exe
+$StagingPs1 = @'
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$KuiExe = Join-Path $ScriptDir "kui.exe"
+if (-not (Test-Path $KuiExe)) {
+    $KuiExe = Join-Path $ScriptDir "bin\kui.exe"
+}
+if (Test-Path $KuiExe) {
+    & $KuiExe $args
+    exit $LASTEXITCODE
+}
+Write-Error "kui.exe not found in $ScriptDir"
+exit 1
+'@
+$StagingPs1 | Out-File -Encoding utf8 (Join-Path $StagingPath "kui.ps1")
 
 # Copy precompiled platform jar into .kui/build
 $StagingKuiBuild = Join-Path $StagingPath ".kui\build"
@@ -92,13 +141,13 @@ Write-Host "[3/5] Generating WiX installer definition..." -ForegroundColor Yello
 $WxsFile = Join-Path $DistPath "kui.wxs"
 $WxsContent = @"
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  <Package Name="KUI Platform (Kotlin UI)"
+  <Package Name="KUI Platform ($MsiName)"
            Manufacturer="KUI Project"
            Version="$Version"
            UpgradeCode="D74A1B29-4F58-4C82-962E-73E8A42598D1"
            Scope="perMachine">
 
-    <MajorUpgrade DowngradeErrorMessage="A newer version of KUI Platform is already installed." />
+    <MajorUpgrade AllowDowngrades="yes" />
 
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
@@ -136,7 +185,7 @@ $WxsContent = @"
                   Name="KUI Command Prompt"
                   Description="Open a command prompt ready for KUI"
                   Target="[SystemFolder]cmd.exe"
-                  Arguments="/k echo Welcome to KUI (Kotlin UI) Platform! &amp; kui doctor"
+                  Arguments="/k echo Welcome to KUI (Rust + Kotlin) Platform! &amp; kui doctor"
                   WorkingDirectory="PersonalFolder" />
         <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
         <RegistryValue Root="HKCU"
@@ -149,7 +198,7 @@ $WxsContent = @"
     </ComponentGroup>
 
     <!-- Main Feature Hierarchy -->
-    <Feature Id="MainFeature" Title="KUI Platform and Toolchain" Level="1">
+    <Feature Id="MainFeature" Title="KUI Platform ($MsiName)" Level="1">
       <ComponentGroupRef Id="ProductFilesGroup" />
       <ComponentGroupRef Id="ShortcutComponents" />
     </Feature>
@@ -166,10 +215,10 @@ Write-Host "[3/5] Written WiX definition to $WxsFile" -ForegroundColor Green
 
 # 5. Build MSI Installer with WiX
 Write-Host "[4/5] Compiling MSI installer with WiX..." -ForegroundColor Yellow
-$MsiOutput = Join-Path $DistPath "kui-v$Version-windows-x64.msi"
+$MsiOutput = Join-Path $DistPath "$MsiName.msi"
 
-# Ensure WiX UI extension is cached
-wix extension add WixToolset.UI.wixext 2>$null | Out-Null
+Push-Location $DistPath
+& wix extension add WixToolset.UI.wixext/5.0.2 2>$null | Out-Null
 
 $WixBuildArgs = @(
     "build",
@@ -180,10 +229,17 @@ $WixBuildArgs = @(
 )
 
 & wix @WixBuildArgs
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "WiX build failed with exit code $LASTEXITCODE"
-    exit $LASTEXITCODE
+$WixExit = $LASTEXITCODE
+Pop-Location
+
+if ($WixExit -ne 0) {
+    Write-Error "WiX build failed with exit code $WixExit"
+    exit $WixExit
 }
+
+# Also copy to workspace root D:\rust_kot\
+$RootCopy = Join-Path $WorkspaceRoot "$MsiName.msi"
+Copy-Item $MsiOutput -Destination $RootCopy -Force
 
 # 6. Checksum and Summary
 Write-Host "[5/5] Generating cryptographic verification checksum..." -ForegroundColor Yellow
@@ -196,10 +252,14 @@ $Hash = [System.BitConverter]::ToString($HashBytes).Replace("-", "").ToUpper()
 $HashFile = "$MsiOutput.sha256"
 "$Hash  $($MsiItem.Name)" | Out-File -Encoding ascii $HashFile
 
+$RootHashFile = "$RootCopy.sha256"
+"$Hash  $($MsiItem.Name)" | Out-File -Encoding ascii $RootHashFile
+
 Write-Host "`n========================================================" -ForegroundColor Green
 Write-Host " KUI MSI Installer Built Successfully! 🎉" -ForegroundColor Green
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host " Installer File: $($MsiItem.FullName)"
+Write-Host " Root Copy:     $RootCopy"
 Write-Host " Size:           $([math]::Round($MsiItem.Length / 1MB, 2)) MB ($($MsiItem.Length) bytes)"
 Write-Host " Architecture:   x64"
 Write-Host " Target OS:      Windows 10 / Windows 11 (64-bit)"
