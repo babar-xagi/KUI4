@@ -46,13 +46,20 @@ You can install KUI either by cloning the repository or downloading the release 
 
 For Windows users who want an effortless one-click setup with automatic `PATH` configuration and ultra-fast native Rust CLI:
 
-1. 📥 **[Download 0.01rs_kui.msi (6.39 MB)](https://github.com/babar-xagi/KUI4/raw/main/dist/0.01rs_kui.msi)**
-2. Double-click the `.msi` to run the setup wizard.
-3. The installer automatically:
+| Version | Package | Status | Highlights | Download Link |
+| :--- | :--- | :--- | :--- | :--- |
+| **v0.02rs_kui** | `0.02rs_kui.msi` | **Latest** | Native `kui-packager`, pure Rust AXML, 4-byte zipalign, APK v2 signing | 📥 [**Download 0.02rs_kui.msi (6.57 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi) |
+| **v0.01rs_kui** | `0.01rs_kui.msi` | Previous | Native CLI bootstrapper (`kui-cli`), project generator, doctor diagnostics | 📥 [**Download 0.01rs_kui.msi (6.55 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi) |
+
+See full checksums and changelogs in [**RELEASES.md**](RELEASES.md).
+
+#### Installation Steps:
+1. Double-click the downloaded `.msi` file to run the setup wizard.
+2. The installer automatically:
    - Installs KUI to `C:\Program Files\KUI` with the native Rust `kui.exe` CLI
    - Configures the system `PATH` environment variable automatically
    - Adds a "KUI Command Prompt" shortcut to your Start Menu
-4. Open any terminal and run `kui doctor`!
+3. Open any terminal and run `kui doctor`!
 
 ---
 

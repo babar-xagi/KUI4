@@ -1,0 +1,53 @@
+name: Publish Release Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '*rs_kui'
+
+jobs:
+  build-and-release:
+    name: Build & Publish MSI Release
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install WiX Toolset
+        run: dotnet tool install --global wix --version 5.0.2
+
+      - name: Build Native Release Binaries
+        run: cargo build --release --workspace
+
+      - name: Run Tests
+        run: cargo test --workspace
+
+      - name: Build 0.02rs_kui MSI Installer
+        run: pwsh -File scripts/build_msi.ps1 -Version 0.2.2 -MsiName 0.02rs_kui
+
+      - name: Create GitHub Release with Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: "KUI Release ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            dist/0.02rs_kui.msi
+            dist/0.02rs_kui.msi.sha256
+            releases/v0.01rs_kui/0.01rs_kui.msi
+            releases/v0.01rs_kui/0.01rs_kui.msi.sha256
