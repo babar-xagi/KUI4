@@ -1,94 +1,200 @@
-# KUI Contributor & Development Guide
+# 🤝 KUI Contributor & Development Guide
 
-Thank you for contributing to KUI! This guide covers everything you need to set up your environment, build the platform, run tests, and contribute code.
+Welcome to the **KUI Platform** developer guide! We are building a lightning-fast, zero-Gradle, zero-Android-Studio mobile toolchain and declarative UI framework for Android powered by native Rust systems programming and modern Kotlin.
 
----
-
-## 💻 Prerequisites
-
-To develop on the KUI platform codebase itself, you only need:
-1. **JDK 21 or higher:** (OpenJDK, Temurin, or Oracle JDK). Ensure `JAVA_HOME` is set and `java` is on your `PATH`.
-2. **Kotlin Compiler (`kotlinc`) 2.0+:** Standalone Kotlin compiler on your `PATH`.
-3. **Android Debug Bridge (`adb`) (Optional):** Needed only for testing APK installation and execution on physical hardware or emulators.
-
-*Note: No Gradle, no Android Studio, and no Android SDK build-tools are required to compile or test KUI!*
+This document covers everything you need to set up your development environment, build all workspace crates, run automated test suites, build Windows MSI installers, and contribute to the repository.
 
 ---
 
-## 🚀 Building the Platform CLI
+## 📋 Table of Contents
 
-The KUI CLI is self-bootstrapping. The root directory contains `kui.ps1` (PowerShell) and `kui.bat` (Windows Command Prompt).
+1. [🛠️ Prerequisites & Toolchain](#️-prerequisites--toolchain)
+2. [🏗️ Project Architecture Overview](#️-project-architecture-overview)
+3. [🔨 Building the Workspace](#-building-the-workspace)
+4. [🧪 Running Test Suites](#-running-test-suites)
+5. [📦 Building Windows MSI Installers](#-building-windows-msi-installers)
+6. [📱 Device Testing & Hardware Verification](#-device-testing--hardware-verification)
+7. [📐 Code Standards & Conventions](#-code-standards--conventions)
+8. [🚀 Pull Request & Contribution Workflow](#-pull-request--contribution-workflow)
 
-When you run `kui` for the first time or after modifying any `.kt` file under `platform/`:
-```powershell
-.\kui.bat doctor
+---
+
+## 🛠️ Prerequisites & Toolchain
+
+To contribute to KUI's native systems layer and platform engine, ensure you have the following installed:
+
+| Tool | Minimum Version | Purpose | Installation / Check |
+| :--- | :--- | :--- | :--- |
+| **Rust & Cargo** | 1.80+ (Stable) | Compiles native crates (`kui-cli`, `kui-packager`, `kui-dex`) | `rustc --version` / [rustup.rs](https://rustup.rs) |
+| **Java JDK** | 21+ (Temurin / OpenJDK) | Runs Kotlin compiler & runtime checks | `java -version` |
+| **Kotlin Compiler** | 2.0+ (`kotlinc`) | Compiles declarative UI and user app code | `kotlinc -version` |
+| **Android ADB** | 1.0.41+ | Deploys & launches APKs on hardware/emulators | `adb version` |
+| **WiX Toolset** | v5.0+ (`wix.exe`) | Builds Windows `.msi` installers | `dotnet tool install --global wix` |
+| **PowerShell** | 7.0+ (`pwsh`) | Automation scripts for testing and packaging | `pwsh --version` |
+
+> [!NOTE]
+> **Zero Heavy Android Tooling Required:** You do **not** need Android Studio, Gradle, Gradle wrappers, AAPT2, D8, or Android SDK build-tools to build KUI or develop applications with it!
+
+---
+
+## 🏗️ Project Architecture Overview
+
+KUI utilizes a high-performance **Dual-Layer Architecture**:
+
 ```
-`kui.ps1` automatically detects changed source files in `platform/kui` or `platform/ui4`, re-compiles `.kui/build/kui.jar` with `kotlinc`, and executes the command!
+┌─────────────────────────────────────────────────────────────┐
+│ 🦀 Native Rust Systems Layer (crates/)                      │
+│   ├── kui-cli: High-speed developer CLI & process driver    │
+│   ├── kui-dex: Pure Rust Dalvik Executable (DEX) compiler   │
+│   └── kui-packager: Memory-aligned ZIP + APK v2 signer      │
+├─────────────────────────────────────────────────────────────┤
+│ 💎 Declarative Kotlin UI Layer (platform/)                  │
+│   ├── platform/ui4: High-performance canvas layout engine   │
+│   └── platform/kui: Android platform bridge & runtime       │
+└─────────────────────────────────────────────────────────────┘
+```
 
-To force a full clean rebuild of the platform:
+1. **Native Systems Layer (`crates/`):** Written in pure, safe Rust. Performs instant CLI execution, zero-overhead process orchestration, direct JVM-to-DEX bytecode translation, 4-byte memory alignment (zipalign), and cryptographic APK Signature Scheme v2 generation.
+2. **Declarative UI Layer (`platform/`):** Written in Kotlin. Renders lightweight, 60fps+ declarative UI components directly to Android surfaces without AndroidX or Jetpack Compose overhead.
+
+---
+
+## 🔨 Building the Workspace
+
+### 1. Compile Native Rust Crates
+To compile all crates (`kui-cli`, `kui-packager`, `kui-dex`) in debug mode:
 ```powershell
-Remove-Item .kui\build\kui.jar -Force
-.\kui.bat doctor
+cargo build --workspace
+```
+
+For release builds with link-time optimization (LTO) and binary stripping:
+```powershell
+cargo build --workspace --release
+```
+The optimized native binary will be generated at `target/release/kui.exe`.
+
+### 2. Verify Platform Kotlin Code
+You can verify the Kotlin platform code and UI4 engine using `kotlinc`:
+```powershell
+kotlinc -Werror platform/ui4/src/main/kotlin/ui4/**/*.kt -d .kui/build/ui4.jar
 ```
 
 ---
 
-## 🧪 Running the Milestone Test Suites
+## 🧪 Running Test Suites
 
-All test batteries in KUI are standalone Kotlin scripts located in `scripts/`:
-
-| Milestone | Script | Test Battery Focus |
-| :--- | :--- | :--- |
-| **Milestone A** | `scripts/test_milestone_a.bat` | Repository bootstrap, directory structure, config parser |
-| **Milestone B** | `scripts/test_milestone_b.bat` | Compiler driver, AST, classfile verification |
-| **Milestone C** | `scripts/test_milestone_c.bat` | Incremental caching, SHA-256 hashing, build benchmarks |
-| **Milestone D** | `scripts/test_milestone_d.bat` | UI4 core layout, node trees, constraints, dirty tracking |
-| **Milestone E** | `scripts/test_milestone_e.bat` | Reactive state bindings, gestures, text layout, animation |
-| **Milestone F** | `scripts/test_milestone_f.bat` | Virtual host surface, focus tree, input dispatch, semantics |
-| **Milestone G** | `scripts/test_milestone_g.bat` | Pure DEX compiler, AXML writer, APK v2 signer, ADB launcher (78 tests) |
-
-### Executing Milestone G Tests:
+### 1. Native Rust Tests (Unit & Integration)
+Run all 33+ native Rust tests across `kui-cli`, `kui-packager`, and `kui-dex`:
 ```powershell
+cargo test --workspace
+```
+
+Run tests with verbose output:
+```powershell
+cargo test --workspace -- --nocapture
+```
+
+Run tests for a specific crate:
+```powershell
+cargo test -p kui-dex
+cargo test -p kui-packager
+cargo test -p kui-cli
+```
+
+### 2. Kotlin Platform Milestone Batteries
+The repository includes automated test batteries validating platform components:
+
+```powershell
+# Milestone D: UI4 Core Layout & Node Tree
+.\scripts\test_milestone_d.bat
+
+# Milestone E: Reactive State Bindings & Gestures
+.\scripts\test_milestone_e.bat
+
+# Milestone F: Virtual Host Surface & Focus Tree
+.\scripts\test_milestone_f.bat
+
+# Milestone G: Pure Android Toolchain (78 tests)
 .\scripts\test_milestone_g.bat
 ```
-Expected output:
-```
-===========================================================
-Milestone G Test Results: 78 PASSED, 0 FAILED
-===========================================================
-[KUI4] Milestone G Verification: ALL PASS
-```
 
 ---
 
-## 📱 Testing on a Physical Android Phone
+## 📦 Building Windows MSI Installers
 
-1. Enable **Developer Options** and **USB Debugging** on your phone.
-2. Connect your phone via USB.
-3. Verify connection:
+KUI provides a complete WiX Toolset v5 automation script to produce production-ready, signed Windows Installer `.msi` packages.
+
+To build an installer:
+```powershell
+pwsh -File scripts/build_msi.ps1 -Version 0.3.0 -MsiName 0.03rs_kui
+```
+
+### What `build_msi.ps1` does:
+1. Compiles optimized `kui.exe` using `cargo build --release`.
+2. Packages platform runtime libraries (`platform/kui`, `platform/ui4`).
+3. Generates WiX authoring files (`wix/kui.wxs`) configuring `INSTALLDIR` (`C:\Program Files\KUI`) and adding KUI to the system `PATH`.
+4. Compiles and links `0.03rs_kui.msi`.
+5. Computes and generates the SHA-256 checksum file.
+6. Archives artifacts in `releases/v0.03rs_kui/` and `dist/`.
+
+---
+
+## 📱 Device Testing & Hardware Verification
+
+When testing APK generation and execution on physical hardware:
+
+1. **Verify ADB Connection:**
    ```powershell
-   adb devices -l
+   kui devices
    ```
-4. Navigate to any example project:
+2. **Generate and Run a Test Application:**
    ```powershell
-   cd examples\myaapp
-   ..\..\kui.bat run
+   cd Desktop
+   kui new mytestapp
+   cd mytestapp
+   kui run
    ```
-5. Monitor logcat in a separate terminal:
+3. **Inspect Real-time Android Logcat:**
    ```powershell
-   adb logcat -s ActivityTaskManager AndroidRuntime com.example.myaapp
+   adb logcat -s AndroidRuntime ActivityTaskManager kui com.example.mytestapp
+   ```
+4. **Verify Process State:**
+   ```powershell
+   adb shell dumpsys activity top | Select-String "ACTIVITY"
    ```
 
 ---
 
-## 📐 Coding Conventions & Guidelines
+## 📐 Code Standards & Conventions
 
-1. **Zero External Build Tooling:** Never introduce Gradle dependencies or Gradle wrapper files. All build logic belongs in `platform/kui/`.
-2. **Pure Kotlin / Standard Library Only:** Rely on standard Java/Kotlin library packages (`java.io`, `java.nio`, `java.security`, `java.util.zip`). Avoid third-party heavy JAR dependencies.
-3. **Immutability First:** Data classes and immutable collections (`List`, `Map`, `Set`) preferred unless performing tight binary serialization loops.
-4. **Comprehensive Regression Tests:** Every new phase or bug fix must include corresponding assertions in `tests/ToolchainAndApkTest.kt` or `tests/UI4*.kt`.
-5. **Clear Commit Messages:** Follow standard conventional commits format:
-   - `feat(dex): ...`
-   - `fix(axml): ...`
-   - `docs(user): ...`
-   - `test(ui4): ...`
+### 🦀 Rust Guidelines (`crates/`)
+- **Zero Heavy C Dependencies:** Keep crates pure Rust to ensure cross-compilation simplicity and security.
+- **Error Handling:** Use `std::io::Result` or dedicated enum error types. Never use `unwrap()` or `expect()` in library code; return errors gracefully.
+- **Deterministic Output:** DEX emission and APK signing must produce bit-for-bit deterministic binaries when given identical inputs.
+- **Formatting:** Run `cargo fmt --check` before submitting pull requests.
+- **Linting:** Run `cargo clippy --workspace -- -D warnings` to maintain zero compiler warnings.
+
+### 💎 Kotlin Guidelines (`platform/`)
+- **No Third-Party Dependencies:** Rely solely on the standard Kotlin/Java runtime libraries (`java.nio`, `java.util`, `java.security`).
+- **Memory Efficiency:** Avoid excessive allocations in inner layout and rendering loops.
+- **Naming Conventions:** Class names in `PascalCase`, functions and variables in `camelCase`, constants in `UPPER_SNAKE_CASE`.
+
+---
+
+## 🚀 Pull Request & Contribution Workflow
+
+1. **Fork & Branch:** Create a feature branch from `main`:
+   ```bash
+   git checkout -b feat/your-feature-name
+   ```
+2. **Implement & Test:** Write your code and add corresponding unit/integration tests:
+   ```bash
+   cargo test --workspace
+   ```
+3. **Update Documentation:** If modifying CLI flags, configuration options, or internal architectures, update the corresponding markdown documents in `docs/user/` or `docs/developer/`.
+4. **Update Changelog:** Add an entry under `## [Unreleased]` in [`CHANGELOG.md`](../../CHANGELOG.md).
+5. **Commit:** Follow Conventional Commits:
+   - `feat(dex): support invoke-interface instructions`
+   - `fix(packager): ensure 4-byte padding on APK entries`
+   - `docs(user): add troubleshooting for USB debugging`
+6. **Open PR:** Submit your pull request to `main` with a clear explanation of changes, test results, and device verification screenshots if applicable.

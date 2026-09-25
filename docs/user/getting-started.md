@@ -1,140 +1,211 @@
-# Getting Started with KUI
+# 🚀 Getting Started with KUI
 
-This guide covers system prerequisites, installing the KUI command-line tool, and verifying your development setup.
+This guide covers system prerequisites, installing the official KUI Windows MSI installer or building from source, verifying your environment with `kui doctor`, and running your first native Android application.
 
 ---
 
-## 📋 System Requirements
+## 📋 System Prerequisites
 
-KUI was engineered from the ground up to have minimal dependencies. Unlike traditional mobile development, you **DO NOT** need:
-- ❌ No Android Studio (saves ~5–10 GB disk space)
-- ❌ No Android SDK Command-line Tools / Build-Tools (saves ~5 GB disk space)
-- ❌ No Gradle or Gradle Wrapper
-- ❌ No NDK or CMake
+KUI was engineered from the ground up to have a lightweight footprint. You **DO NOT** need:
+* ❌ No Android Studio (saves ~10–15 GB disk space)
+* ❌ No Android SDK Command-line Tools / Build-Tools (saves ~5 GB disk space)
+* ❌ No Gradle Daemon or Gradle Wrapper
+* ❌ No NDK or CMake toolchains
 
-### Mandatory Requirements:
-1. **Operating System:** Windows 10/11, macOS (Apple Silicon or Intel), or Linux (x86_64 or ARM64).
-2. **Java Development Kit (JDK):** Version 21 or newer (Eclipse Temurin, Amazon Corretto, or OpenJDK).
+### Mandatory Prerequisites:
+1. **Operating System:** Windows 10/11 (64-bit), macOS (Apple Silicon or Intel), or Linux (x86_64 or ARM64).
+2. **Java Development Kit (JDK):** Version 21 or newer ([Eclipse Adoptium Temurin](https://adoptium.net), Amazon Corretto, or OpenJDK).
 3. **Kotlin Compiler (`kotlinc`):** Standalone Kotlin compiler 2.0 or newer.
 
-### Optional Requirement (for physical phone / emulator deployment):
-4. **Android Debug Bridge (`adb`):** Required only if you want to deploy, install, and run APKs on a physical Android phone or Android emulator.
+### Optional Requirement (for device deployment):
+4. **Android Debug Bridge (`adb`):** Required only if you want to deploy, install, and run applications on a physical Android phone or Android emulator.
 
 ---
 
-## 🛠️ Installation Steps
+## 🛠️ Step-by-Step Environment Setup
 
-### Step 1: Install JDK 21+
-Verify your Java version in a terminal:
+### 1. Verify Java Development Kit (JDK 21+)
+Open PowerShell or your terminal and verify Java:
 ```powershell
 java -version
 ```
-Expected output: `openjdk version "21.0.x"` or higher.
+Expected output:
+```text
+openjdk version "21.0.2" 2024-01-16
+OpenJDK Runtime Environment Temurin-21.0.2+13 (build 21.0.2+13)
+OpenJDK 64-Bit Server VM Temurin-21.0.2+13 (build 21.0.2+13, mixed mode, sharing)
+```
 
-### Step 2: Install Kotlin Compiler (`kotlinc`)
-Download the standalone Kotlin compiler from [GitHub Releases](https://github.com/JetBrains/kotlin/releases) or via package managers:
-- **Windows (winget / scoop):**
+If you don't have JDK 21 installed:
+* **Windows (winget):** `winget install EclipseAdoptium.Temurin.21.JDK`
+* **macOS (Homebrew):** `brew install openjdk@21`
+* **Linux:** `sudo apt install openjdk-21-jdk`
+
+---
+
+### 2. Verify Standalone Kotlin Compiler (`kotlinc`)
+Verify `kotlinc` in your terminal:
+```powershell
+kotlinc -version
+```
+Expected output:
+```text
+info: kotlinc-jvm 2.4.0 (JRE 21.0.12.1+101-hotspot)
+```
+
+If not installed:
+* **Windows (winget / scoop):**
   ```powershell
   winget install JetBrains.Kotlin
   # or
   scoop install kotlin
   ```
-- **macOS (Homebrew):**
-  ```bash
-  brew install kotlin
-  ```
-- **Linux:**
-  ```bash
-  sdk install kotlin
-  ```
-
-Verify `kotlinc`:
-```powershell
-kotlinc -version
-```
-Expected output: `info: kotlinc-jvm 2.x.x`.
-
-### Step 3: Set Up KUI CLI
-
-#### Method A: 🪟 Windows One-Click Installer (.msi) — Recommended for Windows
-1. Download the Windows installer: [**`kui-v0.1.0-windows-x64.msi`**](https://github.com/babar-xagi/KUI4/raw/main/dist/kui-v0.1.0-windows-x64.msi)
-2. Double-click the `.msi` file and click **Install**.
-3. The installer automatically installs KUI to `C:\Program Files\KUI` and configures your system `PATH` environment variable.
-4. You are done! Open any terminal and type `kui doctor`.
-
-#### Method B: Manual Clone or Download
-Clone the KUI repository or download the release archive:
-```powershell
-git clone https://github.com/babar-xagi/KUI4.git C:\tools\KUI4
-```
-
-Add the KUI directory to your system `PATH`:
-- **Windows (PowerShell as Administrator):**
-  ```powershell
-  [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools\KUI4", [EnvironmentVariableTarget]::User)
-  ```
-- **macOS / Linux (`~/.bashrc` or `~/.zshrc`):**
-  ```bash
-  export PATH="$PATH:/tools/KUI4"
-  ```
-
-Restart your terminal and verify the `kui` command:
-```powershell
-kui
-```
+* **macOS (Homebrew):** `brew install kotlin`
+* **Linux:** `sdk install kotlin`
 
 ---
 
-## 🩺 Verifying with `kui doctor`
+### 3. Verify Android ADB (For Device Testing)
+Verify `adb`:
+```powershell
+adb --version
+```
+Expected output:
+```text
+Android Debug Bridge version 1.0.41
+```
 
-Run the built-in diagnostic tool to ensure all prerequisites are satisfied:
+If you don't have `adb`:
+* Download standalone Platform-Tools from Google: [Android SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools).
+* Extract and add the folder containing `adb.exe` to your `PATH`.
+
+---
+
+## 💿 Installing the KUI CLI
+
+### Option A: 🪟 Windows One-Click Installer (.msi) — Recommended
+
+1. Download the latest installer: [**`0.03rs_kui.msi`**](../../releases/v0.03rs_kui/0.03rs_kui.msi) (6.65 MB).
+2. Double-click `0.03rs_kui.msi` to run the Windows setup wizard.
+3. The installer automatically:
+   * Installs the native Rust executable to `C:\Program Files\KUI\kui.exe`.
+   * Automatically configures the system `PATH` environment variable.
+4. Open a **new** PowerShell window and verify:
+   ```powershell
+   kui --version
+   ```
+   Output:
+   ```text
+   kui version 0.3.0
+   ```
+
+### Option B: 🦀 Building from Source with Cargo
+
+If you have Rust installed (`cargo` 1.80+):
+```powershell
+git clone https://github.com/babar-xagi/KUI4.git
+cd KUI4
+cargo build --release --workspace
+```
+The compiled native executable is generated at `target/release/kui.exe`. You can copy it to any directory on your `PATH`.
+
+---
+
+## 🩺 Verifying Your Environment: `kui doctor`
+
+Run the built-in diagnostic tool to scan all toolchain dependencies:
 ```powershell
 kui doctor
 ```
 
 Sample output:
-```
-=== KUI Environment Doctor ===
-  [OK] Java Runtime: OpenJDK 21.0.2 (C:\Program Files\Java\jdk-21)
-  [OK] Kotlin Compiler: kotlinc 2.4.20
-  [OK] Android Debug Bridge: adb version 1.0.41 (C:\platform-tools\adb.exe)
-  [OK] Connected Devices: 1 device(s) online (TECNO_BG7)
-  [OK] Operating System: Windows 11 (amd64)
+```text
+==================================================
+ 🩺  KUI Environment Doctor (kui version 0.3.0)
+==================================================
+Scanning toolchain and dependencies...
 
-Everything is set up! You are ready to build pure Kotlin apps with KUI.
-```
+  [PASS] Kotlin Compiler: 2.4.0
+         Path: C:\Users\DELL\AppData\Local\Programs\IntelliJ IDEA\plugins\Kotlin\kotlinc\bin\kotlinc.bat
 
-If any prerequisite is missing or misconfigured, `kui doctor` will output instructions on how to resolve it.
+  [PASS] Java Runtime: 21.0.12.1
+         Path: C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot\bin\java.exe
+
+  [PASS] Android ADB: 1.0.41
+         Path: C:\Users\DELL\AppData\Local\Android\Sdk\platform-tools\adb.exe
+
+--------------------------------------------------
+STATUS: HEALTHY - Environment is ready for KUI builds.
+```
 
 ---
 
-## 📱 Connecting Your Android Mobile Phone (for `kui run`)
+## 📱 Discovering Connected Devices: `kui devices`
 
-To launch your apps directly from your computer onto your physical Android phone with a single `kui run` command:
+Connect your physical Android phone via USB (with **USB Debugging** enabled in Developer Options) or start an Android emulator:
+```powershell
+kui devices
+```
 
-1. **Enable Developer Options on your phone:**
-   - Go to **Settings** -> **About Phone** (or **System** -> **About Phone**).
-   - Find **Build Number** and tap it **7 times** until you see the message *"You are now a developer!"*.
-2. **Enable USB Debugging:**
-   - Go to **Settings** -> **Developer Options** (or **System** -> **Developer Options**).
-   - Toggle **USB Debugging** to **ON**.
-   - *(Important for Xiaomi / Tecno / Realme / Oppo / Vivo)*: Also toggle **Install via USB** to **ON**.
-3. **Connect your Phone via USB:**
-   - Plug your phone into your laptop/PC using a **USB data cable** (ensure the cable supports data transfer, not charging-only).
-   - Swipe down the Android notification shade, tap **Charging this device via USB**, and select **File Transfer** (or **MTP**).
-4. **Grant USB Debugging Authorization:**
-   - Unlock your phone screen. A popup dialog will appear:
-     > *"Allow USB debugging? The computer's RSA key fingerprint is: ..."*
-   - Check the box: ☑ **Always allow from this computer**.
-   - Tap **Allow**.
-5. **Verify Device Connection:**
-   - In your computer terminal, run:
-     ```powershell
-     kui devices
-     ```
-   - Your phone will display with `[ONLINE]` status:
-     ```
-     Found 1 connected device(s):
-       [ONLINE]       108321541J013120     (Physical Device: TECNO_BG7)
-     ```
-   - Now simply run `kui run` inside any KUI project and your app will immediately install and launch on your phone screen!
+Sample output:
+```text
+==================================================
+ 📱 Android Devices (via ADB)
+==================================================
+ADB Path: C:\Users\DELL\AppData\Local\Android\Sdk\platform-tools\adb.exe
+
+Found 1 connected device(s):
+  [ONLINE]       108321541J013120     (Physical Device: TECNO_BG7)
+```
+
+---
+
+## 🚀 Creating and Running Your First App
+
+### 1. Create a Project:
+```powershell
+kui new todo
+```
+Output:
+```text
+Created project 'todo' at: C:\Users\DELL\Desktop\todo
+
+Next steps:
+  cd todo
+  kui run
+```
+
+### 2. Enter the Project:
+```powershell
+cd todo
+```
+
+### 3. Build & Run on Your Device:
+```powershell
+kui run
+```
+Output:
+```text
+==================================================
+ 📦 KUI Native Android Packager (kui-packager)
+==================================================
+Project:         todo
+Package:         com.example.todo
+Version:         0.1.0
+Min / Target:    SDK 24 / SDK 36
+Architecture:    4-byte memory-aligned (zipalign verified)
+Signing Scheme:  APK Signature Scheme v2 (RSA-2048 PKCS#1 v1.5)
+Integrity:       Cryptographically Verified (Tamper-evident tree hash)
+Output APK:      build\outputs\apk\debug\app-debug.apk (4946 bytes, 4 entries)
+--------------------------------------------------
+STATUS: SUCCESS - Native APK ready for installation.
+
+[KUI] Installing APK to device '108321541J013120'...
+Performing Streamed Install
+Success
+[KUI] Launching component 'com.example.todo/.MainActivity'...
+Starting: Intent { cmp=com.example.todo/.MainActivity }
+🚀 Application started successfully on device!
+```
+
+Congratulations! Your first KUI application is now compiled, signed, installed, and rendering natively on your Android device! 🎉

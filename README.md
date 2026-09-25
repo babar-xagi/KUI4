@@ -250,17 +250,20 @@ For detailed flags and options, see the **[CLI Command Reference](docs/user/cli-
 - **[Developer Guide Index](docs/developer/README.md)** — Architectural overview and maintainer roadmap.
 - **[Architecture & Pipeline](docs/developer/architecture.md)** — In-depth architectural blueprint and data flow.
 - **[Directory Structure & File Reference](docs/developer/directory-structure.md)** — File-by-file breakdown of the entire repository.
-- **[Toolchain & Compiler Internals](docs/developer/toolchain-and-compiler.md)** — Deep dive into DEX compilation, AXML generation, and APK v2 signing.
+- **[kui-dex Internals & Dalvik Specification](docs/developer/kui-dex-internals.md)** — Technical deep dive into pure Rust DEX compiler, MUTF-8, opcodes, and ART verification.
+- **[Toolchain & Compiler Internals](docs/developer/toolchain-and-compiler.md)** — Specifications for DEX compilation, AXML generation, and APK v2 signing.
 - **[UI4 Runtime Engine](docs/developer/ui4-engine.md)** — 2-pass layout, `RecordingCanvas`, dirty tree tracking, and input dispatch.
-- **[Contributing & Testing](docs/developer/contributing.md)** — Environment setup, test suites, and coding conventions.
+- **[Contributing & Testing](docs/developer/contributing.md)** — Environment setup, cargo test suites, MSI packaging, and coding conventions.
 
 ### 📱 User & Application Developer Documentation
 - **[User Guide Index](docs/user/README.md)** — User handbook overview and quick start.
-- **[Getting Started & Installation](docs/user/getting-started.md)** — Prerequisites, PATH setup, and `kui doctor`.
-- **[Project Guide & Anatomy](docs/user/project-guide.md)** — Understanding `kui.toml`, `src/main.kt`, and assets.
-- **[CLI Reference](docs/user/cli-reference.md)** — Full command syntax, options, and output explanations.
+- **[Getting Started & Installation](docs/user/getting-started.md)** — Prerequisites, MSI installer, and `kui doctor`.
+- **[Project Guide & Anatomy](docs/user/project-guide.md)** — Understanding `kui.toml`, `src/main.kt`, assets, and output artifacts.
+- **[CLI Reference](docs/user/cli-reference.md)** — Full command syntax, options, and output explanations for all 10 native commands.
+- **[Troubleshooting & Diagnostics](docs/user/troubleshooting.md)** — Solutions for runtime exceptions, USB debugging, and PATH configuration.
 - **[UI Components & Styling Guide](docs/user/ui-components-and-styling.md)** — Layouts, widgets, state reactivity, and animations.
 - **[Cookbook & Real-World Examples](docs/user/cookbook-and-examples.md)** — Ready-to-use recipes: Counter App, Todo Tracker, Profile Dashboard.
+- **[Changelog](CHANGELOG.md)** — Detailed version history, releases, and milestones.
 
 ---
 

@@ -1,85 +1,67 @@
-# KUI Project Guide & Structure
+# 🗂️ KUI Project Anatomy & Structure Guide
 
-This guide explains how to create a new KUI project and details the role of every file and directory generated inside a project.
-
----
-
-## 📦 Creating a New Project
-
-To create a new KUI project, run `kui new` followed by your desired project name:
-```powershell
-kui new myawesomeapp
-```
-
-The generator will scaffold a complete, clean project structure:
-```
-[KUI] Creating project 'myawesomeapp'...
-[KUI] Created myawesomeapp/kui.toml
-[KUI] Created myawesomeapp/src/main.kt
-[KUI] Created myawesomeapp/tests/AppTest.kt
-[KUI] Created myawesomeapp/assets/fonts/
-[KUI] Created myawesomeapp/assets/images/
-[KUI] Project 'myawesomeapp' created successfully!
-```
-
-Navigate into your new project directory:
-```powershell
-cd myawesomeapp
-```
+This guide explains how KUI projects are structured, how configuration in `kui.toml` works, and how to organize source code and assets.
 
 ---
 
-## 🗂️ Project Directory Layout
+## 📁 Project Directory Layout
+
+When you run `kui new <name>`, KUI generates the following clean, self-contained project structure:
 
 ```
-myawesomeapp/
-├── kui.toml            # Project configuration and metadata
-├── src/
-│   └── main.kt         # Application entry point and UI tree
-├── tests/
-│   └── AppTest.kt      # Unit and UI tests
-├── assets/             # Bundled static resources
-│   ├── fonts/          # TrueType / OpenType font files (.ttf, .otf)
-│   └── images/         # Static images and icons (.png, .svg, .webp)
-├── .gitignore          # Version control ignore rules
-└── .kui/               # [Generated] Local build cache and compiled artifacts
+myapp/
+├── kui.toml            # 📄 Central project configuration (single source of truth)
+├── src/                # 💻 Application Kotlin source code
+│   └── main.kt         # 🚀 Application entry point and declarative UI tree
+├── tests/              # 🧪 Automated test battery
+│   └── AppTest.kt      # 🧪 Project unit and UI layout tests
+├── assets/             # 🎨 Static bundled assets (copied directly into the APK)
+│   ├── fonts/          # 🔤 Custom TrueType / OpenType font files (.ttf, .otf)
+│   └── images/         # 🖼️ Static images and icons (.png, .webp, .svg)
+├── build/              # 📦 [Generated] Native build outputs and intermediate bytecode
+│   ├── classes/        # ☕ Compiled JVM .class files
+│   ├── intermediates/  # ⚙️ Generated Dalvik classes.dex
+│   └── outputs/apk/    # 📱 Final 4-byte aligned, signed APKs
+├── .gitignore          # 🙈 Git version control ignore rules
+└── README.md           # 📖 Project overview documentation
 ```
 
 ---
 
-## 📄 File Purposes & Configuration
+## ⚙️ Project Configuration: `kui.toml`
 
-### 1. `kui.toml` (Project Configuration)
-`kui.toml` is the single source of truth for your project. No XML manifests or Groovy scripts are needed.
+`kui.toml` is the single configuration file for your application. No XML manifests or fragile Gradle build scripts are required.
 
 ```toml
 [project]
-name = "myawesomeapp"
+name = "myapp"
 version = "0.1.0"
-applicationId = "com.example.myawesomeapp"
+application_id = "com.example.myapp"
 
 [android]
-minSdk = 26             # Android 8.0 Oreo
-targetSdk = 34          # Android 14
+min_sdk = 24
+target_sdk = 36
 
-[build]
-optimization = "speed"
-incremental = true
+[ui]
+theme = "system"
 ```
 
-| Section | Key | Type | Description |
-| :--- | :--- | :--- | :--- |
-| `[project]` | `name` | String | Human-readable app name displayed on the device launcher. |
-| `[project]` | `version` | String | Semantic version string (e.g. `"1.0.0"`). |
-| `[project]` | `applicationId` | String | Unique Android package identifier (e.g. `"com.company.app"`). |
-| `[android]` | `minSdk` | Integer | Minimum Android API level supported (default: `26`). |
-| `[android]` | `targetSdk` | Integer | Target Android API level for runtime behaviors (default: `34`). |
-| `[build]` | `incremental` | Boolean | Enables high-speed SHA-256 caching for instant builds. |
+### Configuration Keys Reference:
+
+| Section | Key | Type | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `[project]` | `name` | String | *(Folder Name)* | Human-readable app name displayed on the Android launcher. |
+| `[project]` | `version` | String | `"0.1.0"` | Application semantic version string. |
+| `[project]` | `application_id` | String | `com.example.<name>` | Unique reverse-DNS package identifier on Android. |
+| `[android]` | `min_sdk` | Integer | `24` | Minimum Android API level supported (API 24 = Android 7.0 Nougat). |
+| `[android]` | `target_sdk` | Integer | `36` | Target Android API level for runtime behaviors (API 36 = Android 16+). |
+| `[ui]` | `theme` | String | `"system"` | Default UI color scheme (`"system"`, `"light"`, or `"dark"`). |
 
 ---
 
-### 2. `src/main.kt` (Application Entry Point)
-`src/main.kt` contains the `main()` function defining your application's declarative user interface:
+## 💻 Application Source Code: `src/main.kt`
+
+`src/main.kt` defines the entry point and the declarative UI4 widget tree:
 
 ```kotlin
 import ui4.*
@@ -88,49 +70,45 @@ fun main() = app {
     screen {
         center {
             column(gap = 16) {
-                text("Hello World 👋", style = TextStyle.Headline)
+                text("Hello, World! 👋", style = TextStyle.Headline)
                 text("Built with Pure Kotlin KUI! 🚀", style = TextStyle.Body)
+                
+                button(text = "Click Me", onClick = {
+                    println("Button clicked!")
+                })
             }
         }
     }
 }
 ```
 
-- `app { ... }`: The root application container. Sets up the display surface and theme context.
-- `screen { ... }`: Defines a top-level screen or route within the viewport.
-- `center { ... }`: A layout node that centers its child both horizontally and vertically.
-- `column(gap = 16) { ... }`: A linear layout stacking elements vertically with 16dp spacing.
-- `text(...)`: Displays formatted, styled text.
+### Key Elements:
+* `app { ... }`: The root application container that initializes the rendering surface and host bridge.
+* `screen { ... }`: Represents a top-level display viewport or route.
+* `center { ... }`: Centering layout container.
+* `column(gap = 16) { ... }`: Linear vertical layout with 16dp spacing between children.
+* `text(...)`: Text display widget with typography styles.
+* `button(...)`: Interactive touch-responsive button component.
 
 ---
 
-### 3. `tests/AppTest.kt` (Application Tests)
-KUI includes a test harness allowing you to test UI logic without an emulator:
+## 🎨 Asset Management: `assets/`
 
+Any static resources placed in the `assets/` directory are automatically scanned, bundled, and 4-byte memory-aligned into the final APK by `kui-packager`:
+
+* **`assets/fonts/`**: Store TrueType (`.ttf`) or OpenType (`.otf`) fonts for custom typography.
+* **`assets/images/`**: Store images (`.png`, `.webp`, `.svg`, `.jpg`) for custom graphics and icons.
+
+Resources can be loaded in Kotlin using standard asset paths:
 ```kotlin
-import ui4.platform.android.VirtualHost
-import ui4.tree.UiRoot
-
-fun testAppScreen() {
-    val host = VirtualHost(viewportWidth = 1080f, viewportHeight = 1920f)
-    // Verify layout and behavior
-    assert(host.viewportWidth == 1080f)
-}
+image(asset = "images/logo.png")
 ```
-Run tests anytime using `kui test`.
 
 ---
 
-### 4. `assets/` (Static Assets)
-Any files placed inside `assets/` are automatically packaged into the final APK under the `assets/` archive directory:
-- **`assets/fonts/`**: Store custom fonts. Accessible by name in UI4 text styles.
-- **`assets/images/`**: Store application icons, logos, and PNG/JPEG graphics.
+## 📦 Build Artifacts: `build/`
 
----
-
-### 5. `.kui/` (Build Artifacts & Cache)
-Generated automatically by the KUI build engine. Ignored by git:
-- `.kui/build/classes/`: JVM `.class` bytecode output from `kotlinc`.
-- `.kui/build/dex/`: Dalvik Executable (`classes.dex`).
-- `.kui/cache/`: Hashes used by the incremental build system.
-- `build/outputs/apk/debug/app-debug.apk`: The final signed, 4-byte aligned Android package.
+When you run `kui build` or `kui run`, KUI creates the `build/` directory containing:
+* **`build/classes/`**: Compiled JVM `.class` binaries generated by `kotlinc`.
+* **`build/intermediates/dex/classes.dex`**: Direct Dalvik bytecode generated by `kui-dex`.
+* **`build/outputs/apk/debug/app-debug.apk`**: Complete, 4-byte memory-aligned, APK v2-signed Android package ready for distribution and installation.
