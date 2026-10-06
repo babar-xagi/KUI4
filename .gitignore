@@ -6,7 +6,7 @@
 
 # KUI build & cache artifacts
 /build/
-!crates/**/src/build/
+/examples/**/build/
 .kui/
 .kui/build/
 .kui/cache/
@@ -31,6 +31,7 @@ META-INF/
 *.wixpdb
 dist/staging/
 
-# Rust build artifacts
-target/
-Cargo.lock
+# Generated release packages
+/dist/
+*.msi
+*.msi.sha256

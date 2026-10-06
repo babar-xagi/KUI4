@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Unreleased] - Kotlin-only migration (2026-10-05)
+
+- Removed the Rust workspace, native executable, Cargo checks, and checked-in hybrid installers.
+- Both Windows launchers now run the Kotlin CLI and invalidate cached platform JARs when inputs change.
+- Added a shared runner for all Kotlin suites and executable JVM project tests with failure exit codes.
+- Kotlin packaging preserves literal background colors, text contrast, and alignment in the generated text Activity.
+- Release staging, portable ZIP creation, and MSI creation use the Kotlin JAR. Java 21+ remains required; ADB is optional for builds.
+- Current Kotlin platform version remains 0.1.0. Entries below describe historical hybrid releases, not current backend capabilities.
+
 ## 🎨 [0.4.0] - 2026-09-24 (`v0.04rs_kui`)
 
 ### 🌟 Screen Customization & Layout Improvements

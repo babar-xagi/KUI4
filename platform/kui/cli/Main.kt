@@ -95,11 +95,13 @@ private fun executeCommand(command: Command, args: List<String>, flags: Map<Stri
             val exitCode = kui.device.DevicesCommand.execute()
             if (exitCode != 0) System.exit(exitCode)
         }
-        else -> {
-            // Placeholder dispatcher for commands being built in subsequent phases
-            println("kui: command '${command.commandName}' acknowledged.")
-            if (args.isNotEmpty()) println("  Arguments: ${args.joinToString(", ")}")
-            if (flags.isNotEmpty()) println("  Flags: $flags")
+        Command.TEST -> {
+            val exitCode = kui.testing.TestCommand.execute()
+            if (exitCode != 0) System.exit(exitCode)
+        }
+        Command.PROFILE -> {
+            System.err.println("kui: Device profiling is not implemented. Use 'kui bench' for JVM benchmarks.")
+            System.exit(1)
         }
     }
 }

@@ -2,6 +2,8 @@
 
 The KUI toolchain replaces Gradle, Android Gradle Plugin (AGP), AAPT2, D8, and `apksigner` with pure Kotlin components running on standard JDK 21. This document details the exact binary specifications, data layouts, and algorithms implemented across each stage.
 
+The current JVM-to-DEX instruction translator is experimental and does not preserve arbitrary Kotlin logic. The generated Android Activity displays literal UI text with supported literal background colors and alignment. The binary format details below do not imply complete JVM bytecode compatibility.
+
 ---
 
 ## 1. Pure JVM Class File Reader (`ClassFileReader.kt`)

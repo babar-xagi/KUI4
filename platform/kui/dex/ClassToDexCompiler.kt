@@ -208,6 +208,19 @@ object ClassToDexCompiler {
         val hasMainActivity = classFiles.any { it.nameWithoutExtension.equals("MainActivity", ignoreCase = true) }
         if (!hasMainActivity && packageName != null) {
             val displayText = uiText ?: extractUiText(projectRoot, classesDir, classFiles)
+            val metadata = UiMetadata.fromProject(projectRoot, displayText)
+            val styleInstructions = mutableListOf<Short>()
+            val styleFixups = mutableListOf<DexInstructionFixup>()
+            fun addColor(method: String, color: Int?) {
+                if (color == null) return
+                val offset = 26 + styleInstructions.size
+                // const v1, color; invoke-virtual {v0, v1}, TextView.method(int)
+                styleInstructions.addAll(listOf(0x0114.toShort(), color.toShort(), (color ushr 16).toShort(),
+                    0x206E.toShort(), 0.toShort(), 0x0010.toShort()))
+                styleFixups.add(DexInstructionFixup.MethodRef(offset + 4, "Landroid/widget/TextView;", method, "V", listOf("I")))
+            }
+            addColor("setBackgroundColor", metadata.background)
+            addColor("setTextColor", metadata.textColor)
             val mainActivityDesc = "L${packageName.replace('.', '/')}/MainActivity;"
             val mainActivity = DexClass(
                 classDescriptor = mainActivityDesc,
@@ -266,7 +279,7 @@ object ClassToDexCompiler {
                             // 10: invoke-virtual {v0, v1}, TextView.setText(CharSequence)
                             0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
                             // 13: const/16 v1, 17 (Gravity.CENTER)
-                            0x0113.toShort(), 17.toShort(),
+                            0x0113.toShort(), metadata.gravity.toShort(),
                             // 15: invoke-virtual {v0, v1}, TextView.setGravity(int)
                             0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
                             // 18: const/high16 v1, 24.0f (0x41C00000)
@@ -275,9 +288,7 @@ object ClassToDexCompiler {
                             0x206E.toShort(), 0x0000.toShort(), 0x0010.toShort(),
                             // 23: invoke-virtual {v3, v0}, Activity.setContentView(View)
                             0x206E.toShort(), 0x0000.toShort(), 0x0003.toShort(),
-                            // 26: return-void
-                            DexConstants.OP_RETURN_VOID.toShort()
-                        ),
+                        ) + styleInstructions.toShortArray() + shortArrayOf(DexConstants.OP_RETURN_VOID.toShort()),
                         instructionFixups = listOf(
                             DexInstructionFixup.MethodRef(1, "Landroid/app/Activity;", "onCreate", "V", listOf("Landroid/os/Bundle;")),
                             DexInstructionFixup.TypeRef(4, "Landroid/widget/TextView;"),
@@ -287,7 +298,7 @@ object ClassToDexCompiler {
                             DexInstructionFixup.MethodRef(16, "Landroid/widget/TextView;", "setGravity", "V", listOf("I")),
                             DexInstructionFixup.MethodRef(21, "Landroid/widget/TextView;", "setTextSize", "V", listOf("F")),
                             DexInstructionFixup.MethodRef(24, "Landroid/app/Activity;", "setContentView", "V", listOf("Landroid/view/View;"))
-                        )
+                        ) + styleFixups
                     )
                 )
             )

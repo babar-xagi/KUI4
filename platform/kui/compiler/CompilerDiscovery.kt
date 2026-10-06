@@ -86,7 +86,7 @@ object CompilerDiscovery {
             combinedOutput.lines().firstOrNull { it.contains("kotlinc", ignoreCase = true) } ?: "unknown"
         }
 
-        val isValidVersion = isKotlinVersionSupported(versionStr)
+        val isValidVersion = exitCode == 0 && isKotlinVersionSupported(versionStr)
         val message = if (isValidVersion) {
             "Valid Kotlin 2.x compiler detected."
         } else {
@@ -104,7 +104,7 @@ object CompilerDiscovery {
 
     /**
      * Discovers Java runtime / JDK.
-     * Validates that JDK version is >= 17 (recommended 21+).
+     * Validates that JDK version is >= 21, matching the bytecode target.
      */
     fun findJava(): ToolInfo {
         val candidates = mutableListOf<String>()
@@ -140,12 +140,12 @@ object CompilerDiscovery {
 
         val versionStr = match?.groupValues?.get(1) ?: "unknown"
         val majorVersion = versionStr.split('.').firstOrNull()?.toIntOrNull() ?: 0
-        val isValid = majorVersion >= 17
+        val isValid = exitCode == 0 && majorVersion >= 21
 
         val message = if (isValid) {
-            "JDK $versionStr meets minimum requirement (>= 17)."
+            "JDK $versionStr meets minimum requirement (>= 21)."
         } else {
-            "Detected Java $versionStr, but KUI requires JDK >= 17."
+            "Detected Java $versionStr, but KUI requires JDK >= 21."
         }
 
         return ToolInfo(
@@ -193,7 +193,7 @@ object CompilerDiscovery {
             name = "Android ADB",
             path = executable.absolutePath,
             version = versionStr,
-            isValid = true,
+            isValid = exitCode == 0,
             message = "Android Debug Bridge ready."
         )
     }
@@ -243,13 +243,8 @@ object CompilerDiscovery {
 
     private fun runProcessQuiet(cmd: List<String>): Triple<Int, String, String> {
         return try {
-            val process = ProcessBuilder(cmd)
-                .redirectErrorStream(false)
-                .start()
-            val stdout = process.inputStream.bufferedReader().readText()
-            val stderr = process.errorStream.bufferedReader().readText()
-            val code = process.waitFor()
-            Triple(code, stdout, stderr)
+            val result = KotlinProcessRunner.run(cmd)
+            Triple(result.exitCode, result.stdout, result.stderr)
         } catch (e: Exception) {
             Triple(-1, "", e.message ?: "Process execution failed")
         }

@@ -38,9 +38,12 @@ object KotlinCompiler {
         val command = mutableListOf<String>()
         command.add(kotlincPath)
 
-        for (src in sources) {
-            command.add(src.absolutePath)
-        }
+        // cmd.exe has an 8191-character limit. Keep source paths in a quoted UTF-8 argument file.
+        val sourcesFile = File.createTempFile("kui-sources-", ".txt", outputDir.parentFile)
+        sourcesFile.writeText(sources.joinToString("\n") {
+            "\"${it.absolutePath.replace('\\', '/').replace("\"", "\\\"")}\""
+        })
+        command.add("@${sourcesFile.absolutePath}")
 
         command.add("-d")
         command.add(outputDir.absolutePath)
@@ -57,7 +60,11 @@ object KotlinCompiler {
             command.add("-verbose")
         }
 
-        val result = KotlinProcessRunner.run(command, workingDir = workingDir)
+        val result = try {
+            KotlinProcessRunner.run(command, workingDir = workingDir)
+        } finally {
+            sourcesFile.delete()
+        }
         val combinedOutput = buildString {
             if (result.stdout.isNotBlank()) appendLine(result.stdout.trim())
             if (result.stderr.isNotBlank()) appendLine(result.stderr.trim())

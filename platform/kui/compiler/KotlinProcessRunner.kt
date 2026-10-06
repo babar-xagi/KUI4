@@ -39,8 +39,8 @@ object KotlinProcessRunner {
     ): ProcessResult {
         require(command.isNotEmpty()) { "Command line cannot be empty." }
 
-        val finalCommand = if (isWindows && command[0].endsWith(".bat", ignoreCase = true) ||
-            command[0].endsWith(".cmd", ignoreCase = true)
+        val finalCommand = if (isWindows && (command[0].endsWith(".bat", ignoreCase = true) ||
+            command[0].endsWith(".cmd", ignoreCase = true))
         ) {
             listOf("cmd.exe", "/c") + command
         } else {

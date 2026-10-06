@@ -92,6 +92,12 @@ fun main() {
         val testKt = File(stdTarget, "tests/AppTest.kt")
         check("Phase 026: tests/AppTest.kt exists", testKt.isFile)
         check("tests/AppTest.kt has valid content", testKt.readText().contains("fun main()"))
+        val kotlinPackageTarget = File(tempTestRoot, "kotlin-tail")
+        val kotlinPackageResult = ProjectGenerator.generate(NewProjectOptions(
+            name = "kotlin-tail", targetDir = kotlinPackageTarget, applicationId = "com.example.kotlin"
+        ))
+        check("Test package retains full application ID with kotlin suffix", kotlinPackageResult.success &&
+            File(kotlinPackageTarget, "tests/AppTest.kt").readText().contains("package com.example.kotlin"))
 
         // Phase 027 & 035: README with clear structure
         val readme = File(stdTarget, "README.md")

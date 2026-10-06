@@ -148,7 +148,7 @@ object ProjectGenerator {
             val testsDir = File(root, "tests").apply { mkdirs() }
             val appTestKt = File(testsDir, "AppTest.kt")
             val appTestContent = buildString {
-                appendLine("package ${resolvedAppId.substringAfterLast('.')}")
+                appendLine("package $resolvedAppId")
                 appendLine()
                 appendLine("fun main() {")
                 appendLine("    println(\"Running ${options.name} tests: PASS\")")

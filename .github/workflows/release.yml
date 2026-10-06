@@ -1,64 +1,38 @@
-name: Publish Release Packages
-
+name: Publish Kotlin Release
 on:
   push:
     tags:
       - 'v*'
-      - '*rs_kui'
-
 jobs:
   build-and-release:
-    name: Build & Publish MSI Release
     runs-on: windows-latest
     permissions:
       contents: write
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
-
-      - name: Set up Kotlin Compiler
+      - name: Install Kotlin compiler
         run: |
           choco install kotlinc -y --no-progress
-          if (Test-Path "C:\tools\kotlinc\bin") {
-            echo "C:\tools\kotlinc\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          }
-
-      - name: Install WiX Toolset
+          "C:\tools\kotlinc\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Run every Kotlin suite
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_all.ps1
+      - name: Build sample APK
+        working-directory: examples/hello
+        run: ..\..\kui.bat build --clean
+      - name: Install WiX
         run: dotnet tool install --global wix --version 5.0.2
-
-      - name: Build Native Release Binaries
-        run: cargo build --release --workspace
-
-      - name: Run Tests
-        run: cargo test --workspace
-
-      - name: Build 0.03rs_kui MSI Installer
-        run: pwsh -File scripts/build_msi.ps1 -Version 0.3.0 -MsiName 0.03rs_kui
-
-      - name: Create GitHub Release with Assets
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Build Kotlin MSI and portable package
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_msi.ps1
+      - uses: softprops/action-gh-release@v2
         with:
-          name: "KUI Release ${{ github.ref_name }}"
-          draft: false
-          prerelease: false
+          name: "KUI Kotlin ${{ github.ref_name }}"
           generate_release_notes: true
           files: |
-            dist/0.03rs_kui.msi
-            dist/0.03rs_kui.msi.sha256
-            releases/v0.03rs_kui/0.03rs_kui.msi
-            releases/v0.03rs_kui/0.03rs_kui.msi.sha256
-            releases/v0.02rs_kui/0.02rs_kui.msi
-            releases/v0.02rs_kui/0.02rs_kui.msi.sha256
-            releases/v0.01rs_kui/0.01rs_kui.msi
-            releases/v0.01rs_kui/0.01rs_kui.msi.sha256
+            dist/kui-*.msi
+            dist/kui-*.msi.sha256
+            dist/kui-*.zip
+            dist/kui-*.zip.sha256

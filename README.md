@@ -1,291 +1,62 @@
-<div align="center">
+# KUI: Kotlin UI platform
 
-# 🟣 KUI (Kotlin UI)
-### The Pure Kotlin Application Platform & Toolchain
+KUI and the UI4 framework are implemented in Kotlin. The CLI compiles application sources with the standalone Kotlin compiler, writes DEX and binary Android manifests, packages and signs APKs, and uses ADB to install and launch them.
 
-**Build native Android applications with declarative Kotlin.**  
-**Zero Gradle. Zero AGP. Zero AAPT2. Zero D8. Zero Android Studio.**
+## Requirements
 
-[![Kotlin Version](https://img.shields.io/badge/Kotlin-2.0%2B-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![JDK Requirement](https://img.shields.io/badge/JDK-21%2B-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://adoptium.net)
-[![Platform](https://img.shields.io/badge/Platform-Android%20(API%2024%2B)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge)](LICENSE)
-[![Tests Status](https://img.shields.io/badge/Tests-78%2F78%20Passing-brightgreen?style=for-the-badge)]()
-[![Build Time](https://img.shields.io/badge/Incremental%20Build-%3C500ms-success?style=for-the-badge)]()
+- Kotlin compiler 2.0 or newer (tested with 2.4.20).
+- JDK 21 or newer (tested with JDK 25).
+- ADB platform-tools only when installing or launching on a phone.
 
-[**Download Release**](https://github.com/babar-xagi/KUI4/releases) • [**Getting Started**](#-quick-installation--setup) • [**Documentation**](docs/user/README.md) • [**Developer Guide**](docs/developer/README.md)
+Building APKs does not require Android Studio, Gradle, Android SDK platforms, SDK build-tools, AAPT2, D8, zipalign, or apksigner. Java remains necessary because the Kotlin compiler and KUI run on the JVM.
 
-</div>
+## Windows quick start
 
----
+From this repository:
 
-## ⚡ Why KUI?
-
-Traditional Android development requires **15GB+** of downloads (Android Studio, SDK platforms, build-tools, NDK), thousands of lines of fragile Gradle DSL configuration, and multi-minute cold build times.
-
-**KUI replaces the entire build toolchain with pure Kotlin running on standard JDK 21.**
-
-| Capability | Traditional Android Toolchain | KUI Pure Kotlin Platform |
-| :--- | :--- | :--- |
-| **Build Tooling** | Gradle Daemon + Android Gradle Plugin (AGP) | **Zero Gradle** — Built-in pure Kotlin orchestrator |
-| **XML Compilation** | AAPT2 (C++ binary) | **Pure Kotlin AxmlWriter** (`RES_XML_TYPE`, `RES_RESOURCE_MAP`) |
-| **DEX Compilation** | D8 / R8 (Heavy JVM tool) | **Pure Kotlin ClassToDexCompiler** (Direct Dalvik bytecode) |
-| **APK Alignment** | `zipalign` (C++ command-line tool) | **Pure Kotlin 4-byte memory-aligned ApkWriter** |
-| **APK Signing** | `apksigner` / jarsigner | **Pure Kotlin ApkV2Signer** (APK Signature Scheme v2, RSA) |
-| **UI Framework** | Android View / Jetpack Compose | **UI4 Engine** (2-pass layout, reactive state, canvas drawing) |
-| **Installation Size** | 15GB – 20GB disk footprint | **Lightweight** — Only JDK 21 and standalone `kotlinc` |
-| **Incremental Build**| 15s – 45s | **Sub-second (<500ms)** |
-
----
-
-## 📦 Quick Installation & Setup
-
-You can install KUI either by cloning the repository or downloading the release archive.
-
-### Option 1: 🪟 Windows One-Click Installer (.msi) — Recommended for Windows
-
-For Windows users who want an effortless one-click setup with automatic `PATH` configuration and ultra-fast native Rust CLI:
-
-| Version | Package | Status | Highlights | Download Link |
-| :--- | :--- | :--- | :--- | :--- |
-| **v0.04rs_kui** | `0.04rs_kui.msi` | **Latest** | Screen customization (background, hex color, alignment), flexible column & row layouts, strict compiler diagnostics | 📥 [**Download 0.04rs_kui.msi (6.68 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.04rs_kui/0.04rs_kui.msi) |
-| **v0.03rs_kui** | `0.03rs_kui.msi` | Previous | Native `kui-dex` Dalvik compiler, MUTF-8 string pool, opcode translator, Google `dexdump` verified | 📥 [**Download 0.03rs_kui.msi (6.65 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.03rs_kui/0.03rs_kui.msi) |
-| **v0.02rs_kui** | `0.02rs_kui.msi` | Previous | Native `kui-packager`, pure Rust AXML, 4-byte zipalign, APK v2 signing | 📥 [**Download 0.02rs_kui.msi (6.57 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.02rs_kui/0.02rs_kui.msi) |
-| **v0.01rs_kui** | `0.01rs_kui.msi` | Previous | Native CLI bootstrapper (`kui-cli`), project generator, doctor diagnostics | 📥 [**Download 0.01rs_kui.msi (6.55 MB)**](https://github.com/babar-xagi/KUI4/raw/main/releases/v0.01rs_kui/0.01rs_kui.msi) |
-
-See full checksums and changelogs in [**RELEASES.md**](RELEASES.md).
-
-#### Installation Steps:
-1. Double-click the downloaded `.msi` file to run the setup wizard.
-2. The installer automatically:
-   - Installs KUI to `C:\Program Files\KUI` with the native Rust `kui.exe` CLI
-   - Configures the system `PATH` environment variable automatically
-   - Adds a "KUI Command Prompt" shortcut to your Start Menu
-3. Open any terminal and run `kui doctor`!
-
----
-
-### Option 2: Clone with Git
-
-```bash
-# Clone the repository
-git clone https://github.com/babar-xagi/KUI4.git C:\tools\KUI4
+```powershell
+.\kui.bat doctor
+.\kui.bat new myapp
+cd myapp
+..\kui.bat test
+..\kui.bat run
 ```
 
-### Option 3: Download Source Archive (.zip)
-
-1. Download the latest release source from GitHub:
-   👉 **[Download KUI v0.1.0 (.zip)](https://github.com/babar-xagi/KUI4/archive/refs/tags/v0.1.0.zip)**
-2. Extract the archive to your preferred directory (e.g. `C:\tools\KUI4` or `~/tools/KUI4`).
-
----
-
-### Set Environment PATH (Manual Setup for Git / ZIP)
-
-Add the KUI directory to your system `PATH`:
-
-- **Windows (PowerShell as Administrator):**
-  ```powershell
-  [Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\tools\KUI4", [EnvironmentVariableTarget]::User)
-  ```
-- **macOS / Linux (`~/.bashrc` or `~/.zshrc`):**
-  ```bash
-  export PATH="$PATH:/tools/KUI4"
-  ```
-
-Restart your terminal and run the environment diagnostic:
-```bash
-kui doctor
-```
-
-Output:
-```
-=== KUI Environment Doctor ===
-  [OK] Java Runtime: OpenJDK 21.0.2 (C:\Program Files\Java\jdk-21)
-  [OK] Kotlin Compiler: kotlinc 2.4.20
-  [OK] Android Debug Bridge: adb version 1.0.41
-  [OK] Connected Devices: 1 device(s) online (TECNO_BG7)
-  [OK] Operating System: Windows 11 (amd64)
-
-Everything is set up! You are ready to build pure Kotlin apps with KUI.
-```
-
----
-
-## 🚀 60-Second Quick Start
-
-Create, build, and deploy an application to your phone in three simple commands:
-
-```bash
-# 1. Create a new application
-kui new myawesomeapp
-cd myawesomeapp
-
-# 2. Build the signed APK
-kui build
-
-# 3. Connect your Android phone via USB and run!
-kui run
-```
-
-KUI automatically compiles the Kotlin sources, generates Dalvik bytecode, aligns and signs the APK, installs it onto your device via ADB, and immediately launches it in the foreground!
-
----
-
-## 💻 Code Example: Declarative UI4 DSL
-
-Your entire user interface is written in **100% pure Kotlin** without any layout XML files:
+The first invocation compiles the Kotlin platform into `.kui/build/kui.jar`. Subsequent invocations reuse it until platform sources or compiler inputs change. Both Windows launchers always run the Kotlin CLI. Add the repository directory to PATH to use `kui` from other directories.
 
 ```kotlin
-// src/main.kt
 import ui4.*
 
 fun main() = app {
-    val counter = mutableStateOf(0)
-
     screen {
         center {
-            box(
-                padding = 24f,
-                backgroundColor = Color(0xFFF8FAFC.toInt())
-            ) {
-                column(gap = 20, alignment = Alignment.CenterHorizontally) {
-                    text("Hello Babar 👋", style = TextStyle.Headline)
-                    text("Running on KUI Pure Kotlin Platform! 🚀", style = TextStyle.Body)
-
-                    text(
-                        "Taps: ${counter.value}",
-                        style = TextStyle(fontSize = 32f, color = Color(0xFF2563EB.toInt()))
-                    )
-
-                    row(gap = 12) {
-                        button("Tap Me (+)", backgroundColor = Color(0xFF22C55E.toInt())) {
-                            counter.value++
-                        }
-                        button("Reset", backgroundColor = Color(0xFF64748B.toInt())) {
-                            counter.value = 0
-                        }
-                    }
-                }
-            }
+            text("Hello from Kotlin!")
         }
     }
 }
 ```
 
----
+APKs are written to `build/outputs/apk/debug/app-debug.apk` inside the application project.
 
-## 🛠️ CLI Command Reference
+## Tests and distribution
 
-| Command | Description | Example |
-| :--- | :--- | :--- |
-| **`kui new <name>`** | Scaffolds a complete project with config, sources, assets, and tests. | `kui new myapp` |
-| **`kui build`** | Compiles Kotlin sources, builds DEX, and generates signed APK. | `kui build --release` |
-| **`kui run`** | Builds, packages, signs, installs, and launches on connected device. | `kui run` |
-| **`kui test`** | Executes project unit tests and UI layout test battery. | `kui test` |
-| **`kui clean`** | Cleans build directories and incremental cache hashes. | `kui clean` |
-| **`kui devices`** | Lists attached physical phones and running emulators. | `kui devices` |
-| **`kui doctor`** | Validates JDK, Kotlin compiler, ADB, and system environment. | `kui doctor` |
-
-For detailed flags and options, see the **[CLI Command Reference](docs/user/cli-reference.md)**.
-
----
-
-## 🏗️ Architecture at a Glance
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                      src/main.kt                            │
-│           (Pure Kotlin Declarative UI4 Code)                │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                 Official Kotlinc (JVM 21)                   │
-│               (.class JVM Bytecode Output)                  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-            ┌──────────────────┴──────────────────┐
-            ▼                                     ▼
-┌──────────────────────────────┐    ┌──────────────────────────────┐
-│ ClassToDexCompiler           │    │ ManifestGenerator            │
-│  - JVM -> Dalvik Translation │    │  - Pure Binary AXML Emitter  │
-│  - Instruction Fixups        │    │  - Resource Map (0x0180)     │
-│  - Modified UTF-8 (MUTF-8)   │    │  - 20-Byte Attribute Structs │
-│  - SHA-1 & Adler-32 Hashes   │    │  - AndroidManifest.xml       │
-└──────────────┬───────────────┘    └──────────────┬───────────────┘
-               │                                   │
-               └─────────────────┬─────────────────┘
-                                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│ ApkWriter                                                   │
-│  - 4-Byte Zipaligned ZIP/APK Archive                        │
-│  - Assets compression (assets/)                             │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ ApkV2Signer                                                 │
-│  - APK Signature Scheme v2 (RSA 2048, SHA-256 with RSA)     │
-│  - Persistent Keystore (~/.kui/debug.pk8 / debug.crt)       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ DeviceManager (ADB)                                         │
-│  - adb install -r -d -t build/outputs/apk/debug/app-debug.apk│
-│  - adb shell am start -n <package>/.MainActivity            │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Physical Android Phone / Hardware (TECNO_BG7 Verified)      │
-└─────────────────────────────────────────────────────────────┘
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_all.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_distribution.ps1
 ```
 
----
+The test runner executes every Kotlin suite, including compiler integration, UI4 layout/input/state, DEX, APK alignment, signatures, and tamper detection. Logs are stored in `.kui/verification`. Existing milestone scripts also use this runner.
 
-## 📚 Documentation Index
+Running `kui.bat test` at the repository root also executes all repository test programs through the Kotlin runner. Inside an application project, it executes that project's tests.
 
-### 👨‍💻 Developer & Contributor Documentation
-- **[Developer Guide Index](docs/developer/README.md)** — Architectural overview and maintainer roadmap.
-- **[Architecture & Pipeline](docs/developer/architecture.md)** — In-depth architectural blueprint and data flow.
-- **[Directory Structure & File Reference](docs/developer/directory-structure.md)** — File-by-file breakdown of the entire repository.
-- **[kui-dex Internals & Dalvik Specification](docs/developer/kui-dex-internals.md)** — Technical deep dive into pure Rust DEX compiler, MUTF-8, opcodes, and ART verification.
-- **[Toolchain & Compiler Internals](docs/developer/toolchain-and-compiler.md)** — Specifications for DEX compilation, AXML generation, and APK v2 signing.
-- **[UI4 Runtime Engine](docs/developer/ui4-engine.md)** — 2-pass layout, `RecordingCanvas`, dirty tree tracking, and input dispatch.
-- **[Contributing & Testing](docs/developer/contributing.md)** — Environment setup, cargo test suites, MSI packaging, and coding conventions.
+The portable Windows ZIP contains a precompiled Kotlin JAR and launchers. Users still need Kotlin and a JDK. MSI creation additionally requires WiX on the maintainer's machine:
 
-### 📱 User & Application Developer Documentation
-- **[User Guide Index](docs/user/README.md)** — User handbook overview and quick start.
-- **[Getting Started & Installation](docs/user/getting-started.md)** — Prerequisites, MSI installer, and `kui doctor`.
-- **[Project Guide & Anatomy](docs/user/project-guide.md)** — Understanding `kui.toml`, `src/main.kt`, assets, and output artifacts.
-- **[CLI Reference](docs/user/cli-reference.md)** — Full command syntax, options, and output explanations for all 10 native commands.
-- **[Troubleshooting & Diagnostics](docs/user/troubleshooting.md)** — Solutions for runtime exceptions, USB debugging, and PATH configuration.
-- **[UI Components & Styling Guide](docs/user/ui-components-and-styling.md)** — Layouts, widgets, state reactivity, and animations.
-- **[Cookbook & Real-World Examples](docs/user/cookbook-and-examples.md)** — Ready-to-use recipes: Counter App, Todo Tracker, Profile Dashboard.
-- **[Changelog](CHANGELOG.md)** — Detailed version history, releases, and milestones.
-
----
-
-## 🧪 Testing & Verification
-
-The platform is covered by 7 independent milestone test batteries (`Milestone A` through `Milestone G`).
-
-To execute the full Milestone G test suite (78 tests):
-```bash
-./scripts/test_milestone_g.bat
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_msi.ps1
 ```
 
-```
-===========================================================
-Milestone G Test Results: 78 PASSED, 0 FAILED
-===========================================================
-[KUI4] Milestone G Verification: ALL PASS
-```
+## Current scope
 
----
+The Android backend is experimental. It synthesizes a native Activity displaying extracted literal UI text. The class-to-DEX translator does not yet preserve arbitrary Kotlin application logic. Interactive UI4 state, gestures, layouts, and rendering are tested on the JVM; the complete engine is not wired into the Android Activity. Device profiling is not implemented.
 
-## 📄 License
-
-KUI is open-source software licensed under the [Apache License, Version 2.0](LICENSE).
+[User guide](docs/user/README.md) · [Developer guide](docs/developer/README.md) · [Roadmap](UI4_KUI_PURE_KOTLIN_PLATFORM_ROADMAP.md)

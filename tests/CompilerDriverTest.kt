@@ -57,7 +57,7 @@ fun main() {
         // 2. Phase 038: JDK Check & Doctor Command
         // -------------------------------------------------------------
         val javaInfo = CompilerDiscovery.findJava()
-        check("Discover Java Runtime (JDK >= 17)", javaInfo.isValid, "Java: ${javaInfo.version}")
+        check("Discover Java Runtime (JDK >= 21)", javaInfo.isValid, "Java: ${javaInfo.version}")
         val envReport = CompilerDiscovery.checkEnvironment()
         check("Environment check isReady is true", envReport.isReady, "Errors: ${envReport.errors}")
         val doctorExit = DoctorCommand.execute()
