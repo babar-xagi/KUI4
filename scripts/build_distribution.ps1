@@ -31,7 +31,14 @@ $Zip = Join-Path $Dist "kui-$Version-windows.zip"
 if (Test-Path -LiteralPath $Zip) { Remove-Item -LiteralPath $Zip -Force }
 # .NET ZIP includes .gitkeep files and hidden files (Compress-Archive omits them).
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::CreateFromDirectory($Stage, $Zip)
+Add-Type -AssemblyName System.IO.Compression
+$Archive = [IO.Compression.ZipFile]::Open($Zip, [IO.Compression.ZipArchiveMode]::Create)
+try {
+    foreach ($File in Get-ChildItem -LiteralPath $Stage -Recurse -File -Force) {
+        $EntryName = $File.FullName.Substring($Stage.Length + 1).Replace('\', '/')
+        [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($Archive, $File.FullName, $EntryName, [IO.Compression.CompressionLevel]::Optimal) | Out-Null
+    }
+} finally { $Archive.Dispose() }
 $Hash = Get-KuiFileHash $Zip
 [IO.File]::WriteAllText("$Zip.sha256", "$Hash  $([IO.Path]::GetFileName($Zip))")
 Write-Host "[KUI] Kotlin distribution: $Zip"

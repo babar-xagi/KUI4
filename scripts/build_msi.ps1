@@ -1,22 +1,28 @@
 param(
-    [string]$Version = '0.1.0',
-    [string]$MsiName = 'kui-0.1.0-windows-x64'
+    [string]$Version = '',
+    [string]$MsiName = ''
 )
 $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'kotlin_tools.ps1')
-if ($Version -notmatch '^\d+\.\d+\.\d+$' -or $MsiName -notmatch '^[A-Za-z0-9_.-]+$') { throw 'Invalid MSI version or filename.' }
 if (Test-Path -LiteralPath "$env:USERPROFILE\.dotnet\tools\wix.exe") { $env:PATH = "$env:USERPROFILE\.dotnet\tools;$env:PATH" }
 $Wix = Get-Command wix -ErrorAction SilentlyContinue
 if (-not $Wix) { throw 'WiX is needed only to create an MSI. Use build_distribution.ps1 for a portable Kotlin package.' }
 & (Join-Path $PSScriptRoot 'build_distribution.ps1')
+$Jar = Get-KuiJar $RepoRoot
+$PlatformVersion = ((& java -cp $Jar kui.cli.MainKt version) -replace '^kui version ', '').Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Cannot determine KUI version.' }
+if (-not $Version) { $Version = $PlatformVersion }
+if ($Version -ne $PlatformVersion) { throw "MSI version $Version must match the Kotlin CLI version $PlatformVersion." }
+if (-not $MsiName) { $MsiName = "kui-$Version-windows-x64" }
+if ($Version -notmatch '^\d+\.\d+\.\d+$' -or $MsiName -notmatch '^[A-Za-z0-9_.-]+$') { throw 'Invalid MSI version or filename.' }
 $Dist = Join-Path $RepoRoot 'dist'
 $Wxs = Join-Path $Dist 'kui.wxs'
 $Definition = @"
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="KUI Kotlin Platform" Manufacturer="KUI Project" Version="$Version"
            UpgradeCode="D74A1B29-4F58-4C82-962E-73E8A42598D1" Scope="perMachine">
-    <MajorUpgrade DowngradeErrorMessage="A newer KUI version is already installed." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer KUI version is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="KUI" />

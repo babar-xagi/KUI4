@@ -17,7 +17,7 @@ data class Version(
  * Canonical KUI version constants.
  */
 object KuiVersion {
-    val CURRENT = Version(0, 1, 0)
+    val CURRENT = Version(0, 4, 0)
     val VERSION_STRING: String = CURRENT.toString()
     val DISPLAY_NAME: String = "kui version $VERSION_STRING"
 }

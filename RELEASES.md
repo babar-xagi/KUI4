@@ -1,6 +1,14 @@
-# Kotlin distribution
+# 📦 Kotlin Release 0.04
 
-The current Kotlin platform version is 0.1.0, matching `KuiVersion` and the repository configuration.
+Release label **0.04** uses tag **v0.04** and Kotlin/package version **0.4.0**, matching `KuiVersion` and the repository configuration. This release is experimental.
+
+| Package | Purpose |
+| --- | --- |
+| `kui-0.4.0-windows.zip` | Portable Windows distribution with precompiled Kotlin JAR |
+| `kui-0.4.0-windows-x64.msi` | Windows installer with PATH registration |
+| `*.sha256` | SHA-256 checksums for downloaded packages |
+
+Release assets are published through the tag-triggered GitHub Actions workflow. See [GitHub releases](https://github.com/babar-xagi/KUI4/releases).
 
 Build a portable package with `scripts/build_distribution.ps1`; build a Windows installer with `scripts/build_msi.ps1`. Both packages contain `lib/kui.jar` and the Kotlin launchers. Checksums are generated beside the artifacts in `dist/`.
 

@@ -6,6 +6,7 @@ on:
 jobs:
   build-and-release:
     runs-on: windows-latest
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
@@ -18,6 +19,21 @@ jobs:
         run: |
           choco install kotlinc -y --no-progress
           "C:\tools\kotlinc\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Validate tag and CLI versions
+        id: version
+        shell: powershell
+        run: |
+          $Actual = ((& .\kui.bat version) -replace '^kui version ', '').Trim()
+          if ($LASTEXITCODE -ne 0) { throw 'Kotlin CLI could not start.' }
+          $Tag = $env:GITHUB_REF_NAME -replace '^v', ''
+          if ($Tag -match '^(\d+)\.(\d+)$') { $Tag = '{0}.{1}.0' -f [int]$Matches[1], [int]$Matches[2] }
+          if ($Tag -ne $Actual) { throw "Tag version $Tag does not match CLI $Actual." }
+          $Label = $env:GITHUB_REF_NAME -replace '^v', ''
+          $Notes = "docs/releases/$Label.md"
+          if (-not (Test-Path -LiteralPath $Notes)) { throw "Release notes are missing: $Notes" }
+          "KUI_PACKAGE_VERSION=$Actual" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "KUI_RELEASE_LABEL=$Label" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "KUI_RELEASE_NOTES=$Notes" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Run every Kotlin suite
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_all.ps1
       - name: Build sample APK
@@ -27,12 +43,37 @@ jobs:
         run: dotnet tool install --global wix --version 5.0.2
       - name: Build Kotlin MSI and portable package
         run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_msi.ps1
-      - uses: softprops/action-gh-release@v2
+      - name: Verify release packages
+        shell: powershell
+        run: |
+          $Msi = 'dist/kui-{0}-windows-x64.msi' -f $env:KUI_PACKAGE_VERSION
+          & .\scripts\verify_distribution.ps1 -MsiPath $Msi
+      - name: Stage greeting APK
+        shell: powershell
+        run: |
+          $Name = 'hello-{0}-debug.apk' -f $env:KUI_PACKAGE_VERSION
+          $Target = Join-Path $PWD "dist/$Name"
+          Copy-Item examples/hello/build/outputs/apk/debug/app-debug.apk $Target
+          . .\scripts\kotlin_tools.ps1
+          $Hash = Get-KuiFileHash $Target
+          [IO.File]::WriteAllText("$Target.sha256", "$Hash  $Name")
+      - name: Preserve verification logs
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: "KUI Kotlin ${{ github.ref_name }}"
-          generate_release_notes: true
+          name: kotlin-test-logs
+          path: .kui/verification/*.log
+      - name: Publish tested Kotlin release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "🚀 KUI ${{ env.KUI_RELEASE_LABEL }} — Kotlin-only"
+          body_path: ${{ env.KUI_RELEASE_NOTES }}
+          prerelease: true
+          fail_on_unmatched_files: true
           files: |
-            dist/kui-*.msi
-            dist/kui-*.msi.sha256
-            dist/kui-*.zip
-            dist/kui-*.zip.sha256
+            dist/kui-${{ env.KUI_PACKAGE_VERSION }}-windows-x64.msi
+            dist/kui-${{ env.KUI_PACKAGE_VERSION }}-windows-x64.msi.sha256
+            dist/kui-${{ env.KUI_PACKAGE_VERSION }}-windows.zip
+            dist/kui-${{ env.KUI_PACKAGE_VERSION }}-windows.zip.sha256
+            dist/hello-${{ env.KUI_PACKAGE_VERSION }}-debug.apk
+            dist/hello-${{ env.KUI_PACKAGE_VERSION }}-debug.apk.sha256

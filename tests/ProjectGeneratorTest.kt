@@ -77,7 +77,7 @@ fun main() {
         check("Phase 030: Version code matches 2", doc.getInt("project", "version_code") == 2)
         check("Phase 031: Min SDK matches 26", doc.getInt("android", "min_sdk") == 26)
         check("Phase 031: Target SDK matches 36", doc.getInt("android", "target_sdk") == 36)
-        check("Phase 032: Generator version recorded", doc.getString("project", "generator_version") == "0.1.0")
+        check("Phase 032: Generator version recorded", doc.getString("project", "generator_version") == kui.cli.KuiVersion.VERSION_STRING)
 
         // Phase 024: Generate main.kt
         val mainKt = File(stdTarget, "src/main.kt")

@@ -30,17 +30,17 @@ fun main(args: Array<String>) {
     }
 
     // 1. Version Constant Tests
-    check("KuiVersion.CURRENT equals 0.1.0",
-        KuiVersion.CURRENT == Version(0, 1, 0),
-        "Expected Version(0, 1, 0), got ${KuiVersion.CURRENT}")
+    check("KuiVersion.CURRENT equals 0.4.0",
+        KuiVersion.CURRENT == Version(0, 4, 0),
+        "Expected Version(0, 4, 0), got ${KuiVersion.CURRENT}")
 
-    check("KuiVersion.VERSION_STRING is '0.1.0'",
-        KuiVersion.VERSION_STRING == "0.1.0",
-        "Expected '0.1.0', got '${KuiVersion.VERSION_STRING}'")
+    check("KuiVersion.VERSION_STRING is '0.4.0'",
+        KuiVersion.VERSION_STRING == "0.4.0",
+        "Expected '0.4.0', got '${KuiVersion.VERSION_STRING}'")
 
-    check("KuiVersion.DISPLAY_NAME is 'kui version 0.1.0'",
-        KuiVersion.DISPLAY_NAME == "kui version 0.1.0",
-        "Expected 'kui version 0.1.0', got '${KuiVersion.DISPLAY_NAME}'")
+    check("KuiVersion.DISPLAY_NAME is 'kui version 0.4.0'",
+        KuiVersion.DISPLAY_NAME == "kui version 0.4.0",
+        "Expected 'kui version 0.4.0', got '${KuiVersion.DISPLAY_NAME}'")
 
     // 2. Cross-check against root kui.toml
     val kuiToml = File(root, "kui.toml")

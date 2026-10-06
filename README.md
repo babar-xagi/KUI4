@@ -144,7 +144,7 @@ Learn how to add checks in the [testing guide](docs/testing.md).
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_distribution.ps1
 ```
 
-Output: `dist/kui-0.1.0-windows.zip` and its SHA-256 checksum. The package includes a precompiled KUI JAR; application builds still require Kotlin and a JDK.
+Output for release **0.04**: `dist/kui-0.4.0-windows.zip` and its SHA-256 checksum. The CLI and installer use version `0.4.0`; the release tag is `v0.04`. The package includes a precompiled KUI JAR; application builds still require Kotlin and a JDK.
 
 MSI creation is available to maintainers with WiX installed:
 
