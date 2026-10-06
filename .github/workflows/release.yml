@@ -16,15 +16,28 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Install Kotlin compiler
+        shell: powershell
         run: |
-          choco install kotlinc -y --no-progress
-          "C:\tools\kotlinc\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $KotlinVersion = '2.4.20'
+          $Configured = [regex]::Match([IO.File]::ReadAllText((Join-Path $PWD 'kui.toml')), '(?m)^kotlin_version\s*=\s*"([^"]+)"').Groups[1].Value
+          if ($Configured -ne $KotlinVersion) { throw 'Update the pinned compiler and checksum to match kui.toml.' }
+          $Zip = Join-Path $env:RUNNER_TEMP "kotlin-compiler-$KotlinVersion.zip"
+          $Tools = Join-Path $env:RUNNER_TEMP "kui-kotlin-$KotlinVersion"
+          Invoke-WebRequest -UseBasicParsing "https://github.com/JetBrains/kotlin/releases/download/v$KotlinVersion/kotlin-compiler-$KotlinVersion.zip" -OutFile $Zip
+          . .\scripts\kotlin_tools.ps1
+          if ((Get-KuiFileHash $Zip) -ne '59E9CA74C7904EF2C122B12114937673CCCE68DE820A663F0ED66CCF8799E0B7') { throw 'Kotlin compiler checksum mismatch.' }
+          Expand-Archive -LiteralPath $Zip -DestinationPath $Tools
+          "$(Join-Path $Tools 'kotlinc\bin')" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "KOTLIN_HOME=$(Join-Path $Tools 'kotlinc')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Validate tag and CLI versions
         id: version
         shell: powershell
         run: |
-          $Actual = ((& .\kui.bat version) -replace '^kui version ', '').Trim()
+          $VersionOutput = @(& .\kui.bat version)
           if ($LASTEXITCODE -ne 0) { throw 'Kotlin CLI could not start.' }
+          $VersionLine = $VersionOutput | Where-Object { $_ -match '^kui version [0-9]+\.[0-9]+\.[0-9]+$' } | Select-Object -Last 1
+          if (-not $VersionLine) { throw 'Kotlin CLI did not report a version.' }
+          $Actual = $VersionLine -replace '^kui version ', ''
           $Tag = $env:GITHUB_REF_NAME -replace '^v', ''
           if ($Tag -match '^(\d+)\.(\d+)$') { $Tag = '{0}.{1}.0' -f [int]$Matches[1], [int]$Matches[2] }
           if ($Tag -ne $Actual) { throw "Tag version $Tag does not match CLI $Actual." }

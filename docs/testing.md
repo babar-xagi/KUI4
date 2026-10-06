@@ -57,4 +57,4 @@ The last full run on 2026-10-05 passed 18 programs and 575 checks covering confi
 
 Negative tests deliberately produce errors such as invalid Kotlin or failed test subprocesses. The overall suite result determines whether those expected failures were handled correctly.
 
-Phone deployment was pending when the connected device disappeared. Do not interpret the JVM results as complete Android runtime verification.
+For release 0.04, a generated greeting APK also passed install, launch, and visible-text checks on a TECNO BG7. This verifies the native text Activity, not the complete interactive UI4 Android runtime.

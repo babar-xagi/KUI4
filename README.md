@@ -134,7 +134,7 @@ For individual suite logs:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test_all.ps1
 ```
 
-The last full verification on **2026-10-05** passed **18 test programs and 575 checks**. It covered compiler integration, UI4 behavior, DEX structures, APK alignment, signatures, and tamper detection. Phone deployment remained pending when the device disconnected; these results do not claim complete Android runtime coverage.
+The last full verification on **2026-10-05** passed **18 test programs and 575 checks**. It covered compiler integration, UI4 behavior, DEX structures, APK alignment, signatures, and tamper detection. Release 0.04 also passed installation, launch, and visible greeting checks on a TECNO BG7. These results do not claim complete Android runtime coverage.
 
 Learn how to add checks in the [testing guide](docs/testing.md).
 
