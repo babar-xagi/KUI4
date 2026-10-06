@@ -1,11 +1,9 @@
-# ♿ Accessibility Architecture
+# ♿ Accessibility Status
 
-## Core Philosophy
-In UI4, accessibility is treated as foundational architecture rather than an afterthought. Every UI node exposes semantic metadata:
-- Roles (Button, Header, Checkbox, Text)
-- Content descriptions
-- Actions (Click, Scroll, Dismiss)
-- State (Selected, Disabled, Focused)
+UI4 includes JVM semantics models for roles, descriptions, state, and actions. Framework tests can inspect and traverse this semantic tree independently of the visual layout.
 
-## Bridge to Android OS
-UI4 maps semantic tree nodes directly to `AccessibilityNodeInfo` objects inside the root platform View (`UI4RootView`), ensuring complete parity with screen readers like TalkBack without requiring native Android View widgets.
+A finished Android AccessibilityNodeInfo/TalkBack adapter for the complete UI4 tree is not implemented. The current generated Activity uses a native TextView; it does not expose a live UI4 semantic hierarchy.
+
+The next platform work should validate focus order, labels, actions, and state changes on Android with assistive technology. JVM semantics checks alone are not evidence of complete screen-reader support.
+
+[Runtime architecture](developer/ui4-engine.md) · [Testing](testing.md)

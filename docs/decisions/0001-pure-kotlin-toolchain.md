@@ -15,5 +15,7 @@ KUI4 will standardize entirely on:
 All build execution, project generation, dependency coordination, bytecode inspection, DEX emission, packaging, and device commands will be implemented natively in Kotlin.
 
 ## Consequences
-- **Positive**: Zero external build dependencies, sub-second execution, transparent error reporting, complete control over the toolchain.
+- **Positive**: One implementation language, direct control over the APK pipeline, and no Gradle or Android SDK build-tools requirement.
 - **Trade-off**: Requires implementing clean Kotlin-native encoders for DEX, binary XML, and APK signing.
+- **Requirements**: The build host still needs Kotlin and JDK 21+. ADB is optional for building and required for automatic deployment; WiX is a maintainer dependency for MSI creation.
+- **Current scope**: The encoders and APK v2 signing are implemented. General instruction translation and full interactive Android hosting remain incomplete. Sub-second execution is a goal, not a guaranteed property of this decision.

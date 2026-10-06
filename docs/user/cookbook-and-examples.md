@@ -1,233 +1,113 @@
-# KUI Code Cookbook & Real-World Examples
+# 🍳 UI4 Examples
 
-This cookbook contains complete, production-ready code examples demonstrating how to build interactive applications with KUI and UI4.
+Each example below is complete Kotlin code. The Android example targets the generated text Activity. The other examples demonstrate the JVM framework and do not claim complete Android interaction.
 
----
+## 👋 A greeting for the current Android backend
 
-## 🍳 Recipe 1: Hello Babar Greeting App
-
-The exact application verified on physical hardware (`TECNO_BG7`):
+Save as `src/main.kt`, then run `kui build`.
 
 ```kotlin
-// src/main.kt
 import ui4.*
 
 fun main() = app {
-    screen {
-        center {
-            column(gap = 16, alignment = Alignment.CenterHorizontally) {
-                text("Hello Babar 👋", style = TextStyle.Headline)
-                text(
-                    "Running on KUI4 Pure Kotlin Platform! 🚀",
-                    style = TextStyle.Body.copy(color = Color(0xFF475569.toInt()))
-                )
-            }
-        }
+    screen(backgroundColor = Color.hex("#121212")) {
+        text("Hello from KUI!")
     }
 }
 ```
 
----
+KUI extracts the literal greeting and supported background styling into the generated native Activity.
 
-## 🍳 Recipe 2: Interactive Counter with Dynamic Styling
-
-A reactive state counter where text color dynamically transitions when reaching thresholds:
+## 🧱 A reusable JVM component
 
 ```kotlin
-// src/main.kt
 import ui4.*
 
-fun main() = app {
-    val counter = mutableStateOf(0)
-
-    screen {
-        center {
-            box(
-                padding = 24f,
-                backgroundColor = Color(0xFFF8FAFC.toInt())
-            ) {
-                column(gap = 20, alignment = Alignment.CenterHorizontally) {
-                    text("Interactive Counter", style = TextStyle.Headline)
-
-                    val statusColor = when {
-                        counter.value > 0 -> Color(0xFF16A34A.toInt()) // Green
-                        counter.value < 0 -> Color(0xFFDC2626.toInt()) // Red
-                        else -> Color(0xFF64748B.toInt())              // Gray
-                    }
-
-                    text(
-                        "${counter.value}",
-                        style = TextStyle(
-                            fontSize = 48f,
-                            fontWeight = FontWeight.Bold,
-                            color = statusColor
-                        )
-                    )
-
-                    row(gap = 12) {
-                        button("Decrement (-)", backgroundColor = Color(0xFFEF4444.toInt())) {
-                            counter.value--
-                        }
-                        button("Reset (0)", backgroundColor = Color(0xFF6B7280.toInt())) {
-                            counter.value = 0
-                        }
-                        button("Increment (+)", backgroundColor = Color(0xFF22C55E.toInt())) {
-                            counter.value++
-                        }
-                    }
-                }
-            }
+fun UI4ContainerScope.profileCard(name: String, role: String) {
+    box(padding = 20, backgroundColor = Color.White) {
+        column(gap = 8) {
+            text(name, style = TextStyle.Title)
+            text(role, style = TextStyle.Body)
         }
+    }
+}
+
+fun main() = app {
+    screen {
+        profileCard("Alex", "Kotlin developer")
     }
 }
 ```
 
----
+The component is an ordinary Kotlin extension function. It introduces no additional template language.
 
-## 🍳 Recipe 3: Task / Todo Manager with Dynamic List
+## 🔢 Check a counter on the JVM
 
-A complete Task list allowing users to type tasks, add them to a list, and toggle completion:
+Save as `tests/CounterTest.kt` and run `kui test`.
 
 ```kotlin
-// src/main.kt
+package tests
+
 import ui4.*
+import ui4.layout.ButtonNode
+import ui4.layout.TextNode
 
-data class TodoItem(val id: Int, val title: String, val isCompleted: Boolean)
+fun main() {
+    val count = state(0)
+    lateinit var label: TextNode
+    lateinit var increment: ButtonNode
 
-fun main() = app {
-    val inputTask = mutableStateOf("")
-    val todoList = mutableStateOf(
-        listOf(
-            TodoItem(1, "Build pure Kotlin DEX compiler", true),
-            TodoItem(2, "Implement APK Signature Scheme v2", true),
-            TodoItem(3, "Launch on physical mobile phone", true),
-            TodoItem(4, "Write developer & user documentation", false)
-        )
-    )
-
-    screen {
-        box(padding = 20f) {
-            column(gap = 16) {
-                text("KUI Task Tracker", style = TextStyle.Headline)
-
-                row(gap = 8) {
-                    textField(
-                        value = inputTask.value,
-                        placeholder = "New task description...",
-                        onValueChange = { inputTask.value = it }
-                    )
-                    button("Add") {
-                        if (inputTask.value.isNotBlank()) {
-                            val newItem = TodoItem(
-                                id = (todoList.value.maxOfOrNull { it.id } ?: 0) + 1,
-                                title = inputTask.value.trim(),
-                                isCompleted = false
-                            )
-                            todoList.value = todoList.value + newItem
-                            inputTask.value = ""
-                        }
-                    }
-                }
-
-                divider()
-
-                column(gap = 8) {
-                    for (item in todoList.value) {
-                        row(gap = 12, alignment = Alignment.CenterVertically) {
-                            val checkSymbol = if (item.isCompleted) "[X]" else "[ ]"
-                            button(checkSymbol) {
-                                todoList.value = todoList.value.map {
-                                    if (it.id == item.id) it.copy(isCompleted = !it.isCompleted) else it
-                                }
-                            }
-                            text(
-                                item.title,
-                                style = if (item.isCompleted) {
-                                    TextStyle.Body.copy(color = Color.Gray)
-                                } else {
-                                    TextStyle.Body
-                                }
-                            )
-                        }
-                    }
-                }
+    app {
+        screen {
+            column(gap = 12) {
+                label = text(count)
+                increment = button("Increment") { count.value++ }
             }
         }
     }
+
+    increment.click()
+    increment.click()
+    check(count.value == 2)
+    check(label.text == "2")
+    println("Counter example passed")
 }
 ```
 
----
+This validates observable state and callbacks without a device. It does not test Android touch delivery.
 
-## 🍳 Recipe 4: User Profile Card Dashboard
+## 🖼️ Record a JVM render
 
-A modern dashboard card layout with metrics and avatars:
+Save as `tests/RenderTest.kt` and run `kui test`.
 
 ```kotlin
-// src/main.kt
+package tests
+
 import ui4.*
+import ui4.platform.android.VirtualHost
+import ui4.render.RenderOp
 
-fun main() = app {
-    screen {
-        center {
-            box(
-                width = 360f,
-                padding = 24f,
-                backgroundColor = Color.White
-            ) {
-                column(gap = 16) {
-                    row(gap = 16, alignment = Alignment.CenterVertically) {
-                        // Avatar placeholder
-                        box(width = 64f, height = 64f, backgroundColor = Color(0xFF6366F1.toInt())) {
-                            center {
-                                text("B", style = TextStyle(fontSize = 28f, color = Color.White))
-                            }
-                        }
-                        column(gap = 4) {
-                            text("Babar", style = TextStyle.Title)
-                            text("Lead Mobile Architect", style = TextStyle.Caption)
-                        }
-                    }
-
-                    divider()
-
-                    row(gap = 20) {
-                        column(gap = 4) {
-                            text("Projects", style = TextStyle.Caption)
-                            text("12", style = TextStyle.Headline)
-                        }
-                        column(gap = 4) {
-                            text("Build Speed", style = TextStyle.Caption)
-                            text("0.4s", style = TextStyle.Headline)
-                        }
-                        column(gap = 4) {
-                            text("KUI Status", style = TextStyle.Caption)
-                            text("Live 🚀", style = TextStyle.Headline)
-                        }
-                    }
-
-                    button(
-                        text = "View Analytics",
-                        backgroundColor = Color(0xFF4F46E5.toInt()),
-                        textColor = Color.White
-                    ) {
-                        println("Opening analytics dashboard...")
-                    }
-                }
-            }
+fun main() {
+    val root = app {
+        screen {
+            text("Preview check")
         }
     }
+
+    val host = VirtualHost(viewportWidth = 360f, viewportHeight = 640f)
+    host.attach(root)
+    host.render(force = true)
+    check(host.canvas.ops.any { it is RenderOp.DrawText && it.text == "Preview check" })
+    host.detach()
+    println("Render example passed")
 }
 ```
 
----
+`VirtualHost` records drawing commands in memory. It is not a desktop preview window or a native Android renderer.
 
-## 📱 Running Any Example on Your Mobile Phone
+## 📁 Repository examples
 
-1. Put the recipe code into `src/main.kt` of your project.
-2. Connect your phone via USB cable and ensure USB debugging is enabled.
-3. In your project directory, execute:
-   ```powershell
-   kui run
-   ```
-4. The KUI platform toolchain will compile, build Dalvik bytecode (`classes.dex`), package into an aligned APK, sign with v2 signature, install via ADB, and immediately display the screen on your phone!
+- [hello](../../examples/hello/README.md): starter greeting.
+- [myaapp](../../examples/myaapp/README.md): two literal greeting strings.
+
+Continue with [testing](../testing.md) or [component reference](ui-components-and-styling.md).

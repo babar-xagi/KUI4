@@ -1,36 +1,26 @@
-# 🗂️ KUI Project Anatomy & Structure Guide
+# 📁 Project Guide
 
-This guide explains how KUI projects are structured, how configuration in `kui.toml` works, and how to organize source code and assets.
+KUI projects keep application code, tests, assets, and configuration in separate directories.
 
----
+## Generated files
 
-## 📁 Project Directory Layout
-
-When you run `kui new <name>`, KUI generates the following clean, self-contained project structure:
-
-```
+```text
 myapp/
-├── kui.toml            # 📄 Central project configuration (single source of truth)
-├── src/                # 💻 Application Kotlin source code
-│   └── main.kt         # 🚀 Application entry point and declarative UI tree
-├── tests/              # 🧪 Automated test battery
-│   └── AppTest.kt      # 🧪 Project unit and UI layout tests
-├── assets/             # 🎨 Static bundled assets (copied directly into the APK)
-│   ├── fonts/          # 🔤 Custom TrueType / OpenType font files (.ttf, .otf)
-│   └── images/         # 🖼️ Static images and icons (.png, .webp, .svg)
-├── build/              # 📦 [Generated] Native build outputs and intermediate bytecode
-│   ├── classes/        # ☕ Compiled JVM .class files
-│   ├── intermediates/  # ⚙️ Generated Dalvik classes.dex
-│   └── outputs/apk/    # 📱 Final 4-byte aligned, signed APKs
-├── .gitignore          # 🙈 Git version control ignore rules
-└── README.md           # 📖 Project overview documentation
+├── kui.toml
+├── src/main.kt
+├── tests/AppTest.kt
+├── assets/
+│   ├── images/
+│   └── fonts/
+├── .gitignore
+└── README.md
 ```
 
----
+`kui new myapp --minimal` omits the tests, assets, and generated .gitignore. Use the standard template while learning.
 
-## ⚙️ Project Configuration: `kui.toml`
+The starter test prints a placeholder success message. Add meaningful checks before relying on it.
 
-`kui.toml` is the single configuration file for your application. No XML manifests or fragile Gradle build scripts are required.
+## ⚙️ Application configuration
 
 ```toml
 [project]
@@ -46,69 +36,48 @@ target_sdk = 36
 theme = "system"
 ```
 
-### Configuration Keys Reference:
+| Key | Behavior |
+| --- | --- |
+| `project.name` | Required; used as the application label |
+| `project.version` | Required; used as the version name |
+| `project.application_id` | Android package ID; generated projects receive an explicit value |
+| `project.description` | Optional project metadata |
+| `android.min_sdk` | Defaults to 24; recommended baseline for current APK v2 output |
+| `android.target_sdk` | Defaults to 36; written to the manifest, not an SDK download requirement |
+| `ui.theme` | Parsed metadata; automatic Android theme switching is not implemented |
 
-| Section | Key | Type | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `[project]` | `name` | String | *(Folder Name)* | Human-readable app name displayed on the Android launcher. |
-| `[project]` | `version` | String | `"0.1.0"` | Application semantic version string. |
-| `[project]` | `application_id` | String | `com.example.<name>` | Unique reverse-DNS package identifier on Android. |
-| `[android]` | `min_sdk` | Integer | `24` | Minimum Android API level supported (API 24 = Android 7.0 Nougat). |
-| `[android]` | `target_sdk` | Integer | `36` | Target Android API level for runtime behaviors (API 36 = Android 16+). |
-| `[ui]` | `theme` | String | `"system"` | Default UI color scheme (`"system"`, `"light"`, or `"dark"`). |
+The generator also records `version_code` and `generator_version`. The current packager writes manifest version code 1; changing the recorded `version_code` does not yet change APK versioning.
 
----
+## 💻 Source code
 
-## 💻 Application Source Code: `src/main.kt`
+All Kotlin files under `src/` are discovered recursively. Start with `src/main.kt`; split code into packages as the application grows.
 
-`src/main.kt` defines the entry point and the declarative UI4 widget tree:
+`app { ... }` constructs a UI4 tree. The current Android backend synthesizes its own Activity rather than invoking this Kotlin main with the full UI4 runtime.
 
-```kotlin
-import ui4.*
+## 🎨 Assets
 
-fun main() = app {
-    screen {
-        center {
-            column(gap = 16) {
-                text("Hello, World! 👋", style = TextStyle.Headline)
-                text("Built with Pure Kotlin KUI! 🚀", style = TextStyle.Body)
-                
-                button(text = "Click Me", onClick = {
-                    println("Button clicked!")
-                })
-            }
-        }
-    }
-}
+Files in `assets/` are copied into the APK under `assets/`. Packaging an image or font does not make it render automatically. The public UI4 DSL does not currently provide an `image(asset = ...)` widget.
+
+After changing assets, use `kui build --clean` to ensure they are repackaged. The current fast cache check does not include asset content.
+
+## 📦 Generated outputs
+
+```text
+.kui/
+├── build/
+│   ├── classes/       # Application JVM classes
+│   └── ui4-api.jar    # Compiled UI4 API
+├── cache/             # Compiler cache
+└── tests/             # Compiled JVM tests
+
+build/
+└── outputs/apk/debug/app-debug.apk
 ```
 
-### Key Elements:
-* `app { ... }`: The root application container that initializes the rendering surface and host bridge.
-* `screen { ... }`: Represents a top-level display viewport or route.
-* `center { ... }`: Centering layout container.
-* `column(gap = 16) { ... }`: Linear vertical layout with 16dp spacing between children.
-* `text(...)`: Text display widget with typography styles.
-* `button(...)`: Interactive touch-responsive button component.
+DEX and the binary manifest are assembled during packaging; separate `build/intermediates/dex/` files are not currently emitted by the application build.
 
----
+`kui clean` removes `.kui/build` and `.kui/cache`. It does not delete the final APK or the `.kui/tests` directory.
 
-## 🎨 Asset Management: `assets/`
+Keep generated outputs out of version control, including your application's `build/` directory.
 
-Any static resources placed in the `assets/` directory are automatically scanned, bundled, and 4-byte memory-aligned into the final APK by `kui-packager`:
-
-* **`assets/fonts/`**: Store TrueType (`.ttf`) or OpenType (`.otf`) fonts for custom typography.
-* **`assets/images/`**: Store images (`.png`, `.webp`, `.svg`, `.jpg`) for custom graphics and icons.
-
-Resources can be loaded in Kotlin using standard asset paths:
-```kotlin
-image(asset = "images/logo.png")
-```
-
----
-
-## 📦 Build Artifacts: `build/`
-
-When you run `kui build` or `kui run`, KUI creates the `build/` directory containing:
-* **`build/classes/`**: Compiled JVM `.class` binaries generated by `kotlinc`.
-* **`build/intermediates/dex/classes.dex`**: Direct Dalvik bytecode generated by `kui-dex`.
-* **`build/outputs/apk/debug/app-debug.apk`**: Complete, 4-byte memory-aligned, APK v2-signed Android package ready for distribution and installation.
+[CLI reference](cli-reference.md) · [Project format](../project-format.md)

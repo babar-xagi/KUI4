@@ -1,25 +1,10 @@
-# 🌍 Vision
+# 🌍 Project Vision
 
-**UI4** is the UI/runtime framework.  
-**KUI** is the developer toolchain and CLI.
+KUI aims to let developers create Android applications with a small Kotlin project and a readable declarative UI.
 
-```text
-Developer writes Kotlin
-        ↓
-UI4 declarative UI
-        ↓
-KUI project/build system
-        ↓
-Kotlin compiler
-        ↓
-KUI-owned DEX/resources/APK/signing
-        ↓
-install + launch
-        ↓
-native Android application
-```
+**KUI** owns the developer toolchain. **UI4** owns the UI framework.
 
-## Desired Developer Workflow
+The desired everyday workflow is:
 
 ```powershell
 kui new hello
@@ -27,24 +12,8 @@ cd hello
 kui run
 ```
 
-Generated project:
+The current build pipeline avoids a full Android SDK and implements DEX, binary manifests, aligned APKs, and v2 signing in Kotlin. Application builders still need Kotlin and a JDK; device deployment uses ADB.
 
-```text
-hello/
-├── kui.toml
-├── src/
-│   └── main.kt
-├── assets/
-└── tests/
-```
+The longer-term goal is to run the same UI4 tree, state, rendering, and input behavior on a device that developers validate in JVM tests. That requires completing general bytecode/runtime support and Android hosting.
 
-## Zero-Ceremony Guarantee
-
-No normal UI4 project should require:
-- `gradlew` / `gradle/`
-- `settings.gradle.kts` / `build.gradle.kts`
-- Android Gradle Plugin (AGP)
-- AAPT2
-- D8 / R8
-- `apksigner` / `zipalign`
-- External internet package dependencies during build
+See the [current capability table](../README.md#-what-works-today), [developer experience proposal](developer/developer-experience.md), and [platform roadmap](../UI4_KUI_PURE_KOTLIN_PLATFORM_ROADMAP.md).

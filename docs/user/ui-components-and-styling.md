@@ -1,241 +1,163 @@
-# UI4 Components, Layouts & Styling Guide
+# 🎨 UI4 Components and Styling
 
-UI4 is the declarative user interface toolkit included with KUI. This guide provides code examples and API references for every layout, widget, styling attribute, reactive state pattern, and animation tool available in UI4.
+This guide describes the implemented UI4 JVM API. Full interactive Android hosting is still in development. The generated Android Activity currently displays extracted literal text and supported literal styling.
 
----
+Start with the [learning path](learning-path.md) if these concepts are new.
 
-## 🧱 Layout Containers
+## 🧱 Containers
 
-### 1. `column` (Vertical Layout)
-Stacks children vertically.
+| Function | JVM behavior |
+| --- | --- |
+| `screen { ... }` | Set the application's root screen; one active root child |
+| `column { ... }` | Arrange children vertically |
+| `row { ... }` | Arrange children horizontally |
+| `box { ... }` | Position children within a box |
+| `center { ... }` | A box with centered alignment and a fill-size modifier |
+| `stack { ... }` | Overlay children in insertion order |
+| `scroll { ... }` | Create a scroll container |
+
+Use integer gaps for the beginner layout overloads:
+
 ```kotlin
-column(gap = 16, alignment = Alignment.CenterHorizontally) {
-    text("Item 1")
-    text("Item 2")
-    text("Item 3")
-}
-```
-- `gap`: Space in dp between consecutive children.
-- `alignment`: Cross-axis alignment (`Start`, `CenterHorizontally`, `End`).
+import ui4.*
 
----
-
-### 2. `row` (Horizontal Layout)
-Arranges children side-by-side horizontally.
-```kotlin
-row(gap = 12, alignment = Alignment.CenterVertically) {
-    button("Cancel") { /* on click */ }
-    button("Submit") { /* on click */ }
-}
-```
-- `gap`: Space in dp between consecutive children.
-- `alignment`: Cross-axis alignment (`Top`, `CenterVertically`, `Bottom`).
-
----
-
-### 3. `box` (Decorated Container)
-A container offering background color, borders, padding, and size constraints.
-```kotlin
-box(
-    width = 300f,
-    height = 200f,
-    padding = 16f,
-    backgroundColor = Color(0xFFF1F5F9.toInt())
-) {
-    text("Card Content Inside Box")
-}
-```
-
----
-
-### 4. `center` (Centering Layout)
-Centers a child both horizontally and vertically within available parent space.
-```kotlin
-center {
-    text("Dead Center", style = TextStyle.Headline)
-}
-```
-
----
-
-### 5. `stack` (Z-Index Overlays)
-Overlays children on top of each other. The first child is at the bottom, and the last child is on top.
-```kotlin
-stack {
-    box(width = 200f, height = 200f, backgroundColor = Color.Blue)
-    center {
-        text("Overlaid Text", style = TextStyle(color = Color.White))
-    }
-}
-```
-
----
-
-### 6. `spacer` (Flexible Spacing)
-Inserts flexible or fixed spacing along a layout axis.
-```kotlin
-row {
-    text("Left Aligned")
-    spacer() // Pushes the next element to the far right
-    text("Right Aligned")
-}
-```
-
----
-
-## 🎛️ Interactive Widgets
-
-### 1. `text` (Typography)
-Renders styled text.
-```kotlin
-text("Welcome to KUI", style = TextStyle.Headline)
-text("Secondary subtitle", style = TextStyle.Title)
-text("Standard body text", style = TextStyle.Body)
-text("Tiny caption", style = TextStyle.Caption)
-```
-
-Custom `TextStyle`:
-```kotlin
-text(
-    "Custom Styled Text",
-    style = TextStyle(
-        fontSize = 22f,
-        color = Color(0xFF2563EB.toInt()), // Royal Blue
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 0.5f
-    )
-)
-```
-
----
-
-### 2. `button` (Interactive Buttons)
-Interactive button responding to user clicks/taps.
-```kotlin
-button(
-    text = "Click Me",
-    backgroundColor = Color(0xFF3B82F6.toInt()),
-    textColor = Color.White
-) {
-    println("Button was tapped!")
-}
-```
-
----
-
-### 3. `textField` (Text Input)
-Accepts user text input with cursor positioning and keyboard events.
-```kotlin
-val username = mutableStateOf("")
-
-textField(
-    value = username.value,
-    placeholder = "Enter your username...",
-    onValueChange = { newValue ->
-        username.value = newValue
-    }
-)
-```
-
----
-
-### 4. `card` & `divider`
-```kotlin
-card(elevation = 4f, padding = 16f) {
-    column(gap = 8) {
-        text("Profile", style = TextStyle.Title)
-        divider(thickness = 1f, color = Color.Gray)
-        text("Babar - Mobile Engineer", style = TextStyle.Body)
-    }
-}
-```
-
----
-
-## ⚡ Reactive State Management (`mutableStateOf`)
-
-UI4 uses fine-grained reactivity. UI elements automatically subscribe to any state read during their composition. When the state changes, only the affected subtrees re-render!
-
-### Counter Example:
-```kotlin
-fun counterApp() = app {
-    val count = mutableStateOf(0)
-
+fun main() = app {
     screen {
-        center {
-            column(gap = 20, alignment = Alignment.CenterHorizontally) {
-                text("Current Count: ${count.value}", style = TextStyle.Headline)
-                
-                row(gap = 12) {
-                    button("Decrement (-)") {
-                        count.value--
-                    }
-                    button("Increment (+)") {
-                        count.value++
-                    }
-                }
+        column(gap = 16, alignment = Alignment.CenterHorizontally) {
+            text("Actions")
+            row(gap = 8, alignment = Alignment.CenterVertically) {
+                button("Cancel") { println("Cancelled") }
+                button("Continue") { println("Continuing") }
             }
         }
     }
 }
 ```
 
----
+`gap`, padding, and sizes use the framework's numeric coordinate values. Android density conversion is not yet integrated into the complete UI4 host.
 
-## 👆 Gestures & Event Handling
+## ✍️ Text and buttons
 
-Attach gesture modifiers directly to any UI node:
+`text(value)` creates a text node. Presets are `TextStyle.Headline`, `Title`, `Body`, and `Caption`.
 
 ```kotlin
-box(
-    padding = 24f,
-    backgroundColor = Color.Yellow
-) {
-    text("Tap, Double Tap, or Long Press Me!")
-}.onClick {
-    println("Single tap detected!")
-}.onDoubleTap {
-    println("Double tap detected!")
-}.onLongPress {
-    println("Long press detected!")
+import ui4.*
+
+fun main() = app {
+    screen {
+        column(gap = 12) {
+            text("Welcome", style = TextStyle.Headline)
+            text(
+                "A custom label",
+                style = TextStyle(fontSize = 20f, fontWeight = FontWeight.Bold),
+                color = Color.Blue
+            )
+            button("Continue", backgroundColor = Color.Blue, textColor = Color.White) {
+                println("Continue clicked")
+            }
+        }
+    }
 }
 ```
 
----
+Buttons return a `ButtonNode` and accept `enabled` and `onClick`. The JVM framework supports their callbacks; the generated Android text Activity does not provide live UI4 buttons.
 
-## 🎨 Colors & Theming
+## 🖌️ Modifiers and colors
 
-UI4 provides standard colors and 32-bit ARGB color construction:
+Modifiers chain size, padding, background, opacity, rounding, clipping, and other node properties. Modifier extension functions currently need imports from `ui4.core`.
+
 ```kotlin
-Color.Red
-Color.Green
-Color.Blue
-Color.White
-Color.Black
-Color.Transparent
+import ui4.*
+import ui4.core.padding
+import ui4.core.rounded
+import ui4.core.size
 
-// Custom Hex ARGB:
-val brandPurple = Color(0xFF7C3AED.toInt())
-val slate = Color.fromRgb(30, 41, 59)
-val translucent = Color.fromArgb(alpha = 128, red = 0, green = 0, blue = 0)
-```
-
----
-
-## 🎬 Animations & Interpolation
-
-Animate numeric values fluidly over time:
-```kotlin
-val opacity = mutableStateOf(0.0f)
-
-// Animate from 0.0 to 1.0 over 500ms using EaseInOut
-animateFloat(
-    from = 0.0f,
-    to = 1.0f,
-    durationMs = 500,
-    easing = Easing.EaseInOut
-) { animatedValue ->
-    opacity.value = animatedValue
+fun main() = app {
+    screen {
+        box(
+            modifier = Modifier.size(240f, 120f).padding(16).rounded(12),
+            backgroundColor = Color.hex("#EDE9FE")
+        ) {
+            text("A simple card")
+        }
+    }
 }
 ```
-Supported easings: `Linear`, `EaseIn`, `EaseOut`, `EaseInOut`, `Cubic`.
+
+Use `Color.White`, `Color.Black`, `Color.Blue`, and other presets, or `Color.hex("#RRGGBB")` / `Color.hex("#AARRGGBB")`.
+
+The Android extractor supports literal `backgroundColor = Color.Name`, `Color.hex("...")`, and `Color.parse("...")` expressions. It chooses contrast text color and supported literal alignment for its one TextView. It does not reproduce arbitrary modifier chains, per-node typography, or multiple independently styled widgets.
+
+## ⚡ State and input
+
+`state(value)` and `mutableStateOf(value)` create observable state.
+
+- `text(state)` subscribes the text node to the state's value.
+- `text("Value: ${state.value}")` evaluates a string once; it does not establish a subscription.
+- `textField(state)` initializes its text from a mutable string state and forwards edits into that state. External state changes are not automatically rebound to the field.
+
+For formatted reactive text, bind explicitly:
+
+```kotlin
+import ui4.*
+import ui4.state.bindState
+
+fun main() = app {
+    val count = state(0)
+
+    screen {
+        column(gap = 12) {
+            text("").bindState(count) { node, value ->
+                node.text = "Count: $value"
+            }
+            button("Add one") { count.value++ }
+        }
+    }
+}
+```
+
+For an editable field:
+
+```kotlin
+import ui4.*
+
+fun main() = app {
+    val name = state("")
+
+    screen {
+        column(gap = 12) {
+            textField(name, placeholder = "Your name")
+            text(name)
+        }
+    }
+}
+```
+
+These examples construct JVM framework nodes. Rendering, keyboard integration, and touch interaction through the full Android UI4 host are not yet available.
+
+## 🧩 Compose reusable UI
+
+Define a container-scope extension to reuse a group of components:
+
+```kotlin
+import ui4.*
+
+fun UI4ContainerScope.greetingCard(name: String) {
+    box(padding = 16, backgroundColor = Color.White) {
+        column(gap = 8) {
+            text("Welcome", style = TextStyle.Title)
+            text(name)
+        }
+    }
+}
+
+fun main() = app {
+    screen {
+        greetingCard("Developer")
+    }
+}
+```
+
+The API does not currently include `card`, `divider`, `spacer`, or `image` DSL functions. Use existing containers for composition; treat additional widgets as future work.
+
+[Cookbook](cookbook-and-examples.md) · [JVM runtime architecture](../developer/ui4-engine.md)

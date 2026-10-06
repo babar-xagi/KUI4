@@ -1,29 +1,11 @@
-# 📦 DEX Architecture
+# 📦 DEX Overview
 
-## Overview
-Android executes Dalvik Executable (DEX) bytecode rather than standard JVM classfiles. KUI implements a clean Kotlin-native DEX generation architecture to eliminate external dependencies on Google's D8/R8 tools.
+KUI writes Android Dalvik Executable bytes directly in Kotlin.
 
-## DEX File Structure
-```text
-┌───────────────────────────────┐
-│          DEX Header           │ (Magic, Checksum, SHA-1, Section Offsets)
-├───────────────────────────────┤
-│        String Identifiers     │
-├───────────────────────────────┤
-│         Type Identifiers      │
-├───────────────────────────────┤
-│         Proto Identifiers     │
-├───────────────────────────────┤
-│         Field Identifiers     │
-├───────────────────────────────┤
-│        Method Identifiers     │
-├───────────────────────────────┤
-│        Class Definitions      │
-├───────────────────────────────┤
-│           Data Area           │ (Bytecode instructions, debug info, pools)
-└───────────────────────────────┘
-```
+`ClassFileReader` parses JVM classes. `ClassToDexCompiler` constructs DEX class and method models. `DexFileBuilder` writes identifier tables, class definitions, code/data items, MUTF-8 strings, ULEB128 values, the map, SHA-1 signature, and Adler-32 checksum.
 
-## Progressive Delivery
-- **Phase 1-150**: Hybrid bootstrap verification using Android platform D8 tool when available for validation baselines.
-- **Phase 151-180**: Self-contained pure Kotlin KUI DEX encoder writing byte-exact `classes.dex` directly.
+The instruction translator is incomplete. General fields, branches, exception behavior, Kotlin runtime dependencies, and arbitrary method semantics are not preserved end to end. A structurally valid DEX does not prove application behavior.
+
+The generated MainActivity calls Android framework methods to display literal UI text and supported styling in a TextView.
+
+[Current DEX implementation](developer/kui-dex-internals.md) · [Testing](testing.md)

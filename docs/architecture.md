@@ -1,51 +1,29 @@
-# 🏗️ Architecture
+# 🏗️ Architecture Overview
+
+KUI is the Kotlin build toolchain. UI4 is the Kotlin UI framework.
+
+## Build flow
 
 ```text
-┌──────────────────────────────────────────┐
-│             Developer App                │
-│                 Kotlin                   │
-└───────────────────┬──────────────────────┘
-                    ▼
-┌──────────────────────────────────────────┐
-│                   UI4                    │
-│ API • State • Layout • Input • Nav       │
-│ Accessibility • Theme • Services         │
-└───────────────────┬──────────────────────┘
-                    ▼
-┌──────────────────────────────────────────┐
-│              UI4 Runtime                 │
-│ UI Tree • Dirty Tracking • Render Tree   │
-│ Text • Gestures • Animation              │
-└───────────────────┬──────────────────────┘
-                    ▼
-┌──────────────────────────────────────────┐
-│                   KUI                    │
-│ Project • Build • Compiler • Cache       │
-│ DEX • Resources • APK • Signing          │
-│ Device • Test • Profile                  │
-└───────────────────┬──────────────────────┘
-                    ▼
-               Android / ART
+Kotlin application + UI4 API
+          ↓ kotlinc
+      JVM class files
+          ↓ KUI DEX + manifest writers
+    DEX + binary Android manifest
+          ↓ aligned ZIP + APK v2 signing
+       signed APK
+          ↓ optional ADB install and launch
+       Android device
 ```
 
-## Subsystem Responsibilities
+The current DEX translator has limited instruction support. For simple applications it synthesizes a native text Activity from literal UI source content; it does not execute the full UI4 tree.
 
-### UI4 Platform
-1. **API**: Declarative DSL (`screen`, `column`, `row`, `box`, `text`, `button`).
-2. **Tree**: Lightweight node hierarchy avoiding `android.view.View` allocations.
-3. **State**: Reactive value holders with fine-grained subscription tracking.
-4. **Layout**: Two-phase intrinsic & constraint-driven measurement pass.
-5. **Render**: Hardware-accelerated canvas draw commands.
-6. **Input & Gestures**: Pointer event capture, hit testing, drag, fling, and tap recognizers.
-7. **Navigation**: Pure state stack and transition coordination.
-8. **Accessibility**: Semantics node mapping to Android AccessibilityNodeInfo.
+## Framework flow
 
-### KUI Toolchain
-1. **CLI**: Ergonomic command-line runner (`kui new`, `kui run`, `kui build`, `kui test`).
-2. **Project Model**: Lightweight `kui.toml` parser with strict validation.
-3. **Build Graph**: Directed acyclic task graph with content-addressable caching.
-4. **Compiler Invoker**: Direct invocation of official `kotlinc`.
-5. **DEX Pipeline**: Pure Kotlin bytecode to Dalvik Executable (DEX) compiler.
-6. **AXML & Packaging**: Pure Kotlin binary XML encoder and uncompressed/compressed ZIP/APK writer.
-7. **APK Signing**: V2 / V3 signature block generator with deterministic key generation.
-8. **Device Bridge**: ADB integration for streaming install and fast activity launch.
+On the JVM, the DSL constructs nodes; layout calculates sizes and positions; explicit state bindings update nodes; input and rendering use framework abstractions. `VirtualHost` and `RecordingCanvas` support headless verification.
+
+A complete Android Canvas adapter, UI lifecycle, and OS input/accessibility integration remain in development.
+
+KUI signs APKs with v2 RSA signatures. V3 signing, automatic recomposition, complete resource-table generation, and device profiling are not current capabilities.
+
+[Build architecture](developer/architecture.md) · [Runtime architecture](developer/ui4-engine.md)

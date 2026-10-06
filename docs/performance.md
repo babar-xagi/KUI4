@@ -1,7 +1,18 @@
-# ⚡ Performance & Benchmarking
+# ⚡ Performance and Benchmarks
 
-## Architectural Guarantees
-1. **Zero-Allocation Layout Passes**: Measurement and placement use reusable vectors and inline value classes to prevent GC churn during animation frames.
-2. **Flat UI Trees**: Containers measure children in a single linear pass, eliminating multi-measure exponential explosion.
-3. **Sub-second Build Iteration**: KUI uses content-addressable hashing to skip compilation of unchanged modules.
-4. **App Cold Startup**: Avoids heavyweight reflection or multi-step content provider initialization, launching directly into the first UI4 frame.
+KUI provides JVM benchmarks:
+
+```powershell
+kui bench
+kui bench compiler
+```
+
+Reports are written under `.kui/build/reports/`. The foundation benchmark measures toolchain operations; the compiler benchmark measures cold and warm compilation.
+
+UI4 tests include layout and recorded-render measurements. These are headless JVM measurements, not Android GPU frame-time results.
+
+Cached builds can skip application compilation. Timing depends on hardware, JVM startup, compiler discovery, source size, and cache state. The project does not guarantee sub-second builds, zero-allocation layout, or a particular Android startup time.
+
+Report the command, environment, workload, and cold/warm conditions when discussing performance.
+
+[Testing](testing.md) · [Contributor guide](developer/contributing.md)

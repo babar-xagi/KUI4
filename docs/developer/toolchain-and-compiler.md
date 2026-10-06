@@ -70,11 +70,11 @@ KUI compiles JVM bytecode directly to Android's Dalvik Executable (`classes.dex`
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Critical ART Verifier Guarantees Implemented:
+### Structural Rules Implemented:
 1. **Empty Section Offsets:** When `field_ids_size == 0`, `field_ids_off` must be strictly `0`. Any non-zero offset for an empty section triggers `Failure to verify dex file: Unexpected non-zero offset`.
 2. **`map_list` (`0x1000`):** ART requires a sorted `map_list` record at `map_off` in the data section listing every section type, size, and file offset.
 3. **Method ID Ordering in `class_data_item`:** Direct and virtual methods are encoded as ULEB128 delta indexes (`diff = mIdx - lastMethodIdx`). KUI sorts methods strictly by `mIdx` ensuring `diff >= 0`.
-4. **Instance Constructor Verification:** Dalvik bytecode verifier enforces that every `<init>` constructor must invoke `super.<init>()` (`invoke-direct {this}, superDesc-><init>()V`) before returning. KUI emits this call automatically for all compiled classes.
+4. **Constructor Scaffolding:** For instance constructors, KUI emits a no-argument superclass constructor call before returning. This is limited scaffolding; it does not preserve arbitrary constructor arguments or superclass initialization semantics.
 5. **Symbolic Instruction Fixups (`DexInstructionFixup`):** Enables instructions to reference method IDs, type IDs, and string IDs before the global table is finalized. Indices are resolved and patched at layout time:
    ```kotlin
    sealed class DexInstructionFixup {
@@ -111,7 +111,7 @@ Android OS `PackageParser` will reject plain text XML files. KUI generates genui
 
 ## 4. 4-Byte Zipaligned APK Packaging (`ApkWriter.kt`)
 
-Android's dynamic linker and ART runtime memory-map (`mmap`) `classes.dex` and uncompressed native libraries directly from the APK archive.
+KUI aligns uncompressed ZIP payloads to four-byte boundaries. This implementation does not provide native shared-library page alignment or a complete native-library packaging pipeline.
 
 ### 4-Byte Alignment Rule:
 Every uncompressed entry's file payload offset must satisfy:
@@ -148,10 +148,10 @@ Unlike legacy JAR signing (v1), APK Signature Scheme v2 signs the entire binary 
 ```
 
 ### Signature Generation Algorithm:
-1. **Chunk Hashing:** The APK (excluding the signing block) is split into 1MB chunks across Section 1, Section 3, and Section 4. Each chunk is hashed with SHA-256.
-2. **Root Digest:** The concatenation of all chunk hashes is hashed with SHA-256 to form the root digest.
-3. **Asymmetric Signing:** The root digest is signed with a 2048-bit RSA private key using `SHA256withRSA`.
-4. **Persistent Debug Keystore:** Keys are saved to `~/.kui/debug.pk8` and `~/.kui/debug.crt`. Subsequent builds use the same persistent key, preventing `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+1. **Chunk Hashing:** Sections 1, 3, and 4 are divided into chunks of up to 1 MiB. Each chunk digest is `SHA-256(0xa5 || little-endian chunk length || chunk bytes)`.
+2. **Root Digest:** The combined digest is `SHA-256(0x5a || little-endian chunk count || concatenated chunk digests)`. The EOCD digest input uses the central-directory offset before signing-block insertion.
+3. **Asymmetric Signing:** The signer constructs the signed-data structure containing the digest, certificate, and attributes, then signs that structure with a 2048-bit RSA private key using `SHA256withRSA`.
+4. **Persistent Debug Keys:** Keys normally persist in `~/.kui/debug.pk8` and `~/.kui/debug.crt`. Updates require the same signing identity. A missing/corrupt key or a failed persistence write can change that identity; this is not a production release-signing workflow.
 
 ---
 
